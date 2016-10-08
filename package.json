@@ -1,0 +1,42 @@
+{
+  "name": "zoetic",
+  "version": "0.0.1",
+  "description": "Minimal, streamy data structures. Push with emitter, pull with iterator, and model changing values with observable.",
+  "main": "index.js",
+  "scripts": {
+    "test": "./runtests.sh",
+    "postinstall": "npm link mocha-brackets; npm link sugar"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/o3js/zoetic.git"
+  },
+  "keywords": [
+    "stream",
+    "iterator",
+    "observable",
+    "frp"
+  ],
+  "author": "Aaron Boyd",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/o3js/zoetic/issues"
+  },
+  "homepage": "https://github.com/o3js/zoetic#readme",
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "chai-as-promised": "^6.0.0",
+    "eslint": "^3.3.1",
+    "eslint-config-airbnb": "^10.0.1",
+    "eslint-plugin-import": "^1.13.0",
+    "eslint-plugin-jsx-a11y": "^2.1.0",
+    "eslint-plugin-react": "^6.1.1",
+    "mocha": "^2.5.3",
+    "mocha-brackets": "file:../mocha-brackets"
+  },
+  "dependencies": {
+    "bluebird": "^3.4.6",
+    "lodash": "^4.15.0",
+    "sugar": "file:../sugar"
+  }
+}

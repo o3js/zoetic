@@ -1,0 +1,14 @@
+// Use this file as a starting point for your project's .eslintrc.
+// Copy this file, and add rule overrides as needed.
+{
+  "extends": "airbnb",
+  "rules": {
+    "curly": "off",
+    "arrow-body-style": "off",
+    "no-nested-ternary": "off",
+    "no-param-reassign": "off",
+    "prefer-template": "off",
+    "no-underscore-dangle": "off",
+    "max-len": ["error", 80]
+  }
+}
