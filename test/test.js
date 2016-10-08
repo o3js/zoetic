@@ -14,15 +14,15 @@ module.exports = [
        z.collect(z.iterator(() => [1, 2, 3])),
        [1, 2, 3]);
    }],
-   ['map iterator', () => {
-     return assert.eventually.deepEqual(
-       z.collect(zt.map(i=>i*2, z.iterator(() => [1, 2, 3]))),
-       [2, 4, 6]
-     );
-   }],
+   // ['map iterator', () => {
+   //   return assert.eventually.deepEqual(
+   //     z.collect(zt.map(i=>i*2, z.iterator(() => [1, 2, 3]))),
+   //     [2, 4, 6]
+   //   );
+   // }],
    ['map iterator with transducer', () => {
      return assert.eventually.deepEqual(
-       z.collect(zt.map(i=>i*2), z.iterator(() => [1, 2, 3]))),
+       z.collect(zt.propagate(zt.map(i=>i*2), z.iterator(() => [1, 2, 3]))),
        [2, 4, 6]
      );
    }],

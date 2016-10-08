@@ -2,21 +2,18 @@ const fp = require('lodash/fp');
 const { isEmitter, isIterator, emitter, iterator, bind } = require('./core');
 const assert = require('assert');
 
-function reduce(reducer, target, iter) {
+function reduce(reducer, target, seq) {
   if (isEmitter(target)) {
-    target.bind((forward, error, complete) => {
-      (iter.subscribe)(
+    target.bind((next, error, complete) => {
+      (seq.subscribe)(
         (item) => reducer(forward, item),
         error,
         complete);
     });
   }
   if (isIterator(target)) {
-    bind(() => (forward, error, complete) => {
-      (iter.forward)(
-        (item) => reducer(forward, item),
-        error,
-        complete);
+    bind(() => (next, error, complete) => {
+      seq.forward(...reducer(next, error, complete));
     }, target);
   } else {
     assert(false, 'Unrecognized sequence type');
@@ -24,13 +21,13 @@ function reduce(reducer, target, iter) {
   return target;
 }
 
-function map(fn, iter) {
-  return reduce(
-    (forward, item) => {
-      forward(fn(item));
-    },
-    iterator(),
-    iter);
+function map(f) {
+  return (next, e, c) => [(item) => next(f(item)), e, c];
 }
 
-module.exports = { map };
+function propagate(xf, seq) {
+  return reduce(xf, new seq.constructor(), seq);
+};
+
+
+module.exports = { propagate, map };

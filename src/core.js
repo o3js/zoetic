@@ -124,4 +124,4 @@ function bind(initFn, iter) {
   });
 }
 
-module.exports = { isEmitter, isIterator, iterator, emitter, bind };
+module.exports = { isEmitter, isIterator, iterator, emitter, bind};
