@@ -1,9 +1,11 @@
 const _ = require('lodash');
+const _s = require('sugar');
 const fp = require('lodash/fp');
 const assert = require('sugar').assert;
 const Promise = require('bluebird');
 const { iterator, emitter, isIterator, isEmitter } = require('./core');
 const transduce = require('./transduce');
+
 const bind = (em, thing) => (
   thing
     ? em.bind(makeEmitterFn(thing), true)
@@ -118,8 +120,32 @@ function resolve(xf) {
 
 _.extend(grease, { emitter, collect });
 
-module.exports = {
-  emitter,
-  iterator,
-  collect,
-};
+function transducerToOperation(td) {
+  const arity = _s.parseParams(td).length;
+  const name = td.name;
+  const op = function(...args) {
+    assert(args.length >= arity, 'Insufficient arguments');
+    if (args.length === arity) {
+      return td(...args);
+    }
+    return transduce.propogate(
+      [td(fp.take(arity, args))],
+      args[arity + 1]);
+  };
+  op.name = name;
+  return op;
+}
+
+const ops = fp.mapValues(transducerToOperation, transduce.transducer);
+
+console.log(ops);
+
+module.exports = _.extend(
+  ops,
+  {
+    emitter,
+    iterator,
+    collect,
+    propagate: transduce.propagate,
+  }
+);

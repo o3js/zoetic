@@ -25,9 +25,46 @@ function map(f) {
   return (next, e, c) => [(item) => next(f(item)), e, c];
 }
 
-function propagate(xf, seq) {
-  return reduce(xf, new seq.constructor(), seq);
+function resolve() {
+  return (next, error, c) => [
+    (item) => Promise.resolve(item).then(next, error),
+    error,
+    c,
+  ];
+}
+
+function take(count) {
+  let remaining = count;
+  return (next, e, complete) => [
+    (item) => {
+      if (remaining === 0) complete();
+      else {
+        remaining -= 1;
+        next(item);
+      }
+    },
+    e,
+    complete,
+  ];
+}
+
+function comp(...xfs) {
+  return (next, error, complete) => {
+    return xfs[1]
+      ? xfs[0](...comp(...fp.tail(xfs))(next, error, complete))
+      : xfs[0](next, error, complete);
+  };
+}
+
+function propagate(xfs, seq) {
+  return reduce(comp(...xfs), new seq.constructor(), seq);
 };
 
+const transducer = {
+  map,
+  comp,
+  take,
+  resolve,
+};
 
-module.exports = { propagate, map };
+module.exports = { propagate, transducer };
