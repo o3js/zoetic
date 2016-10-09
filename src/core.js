@@ -102,7 +102,8 @@ const makeIteratorFn = (thing) => {
   return null;
 };
 
-const isIterator = (thing) => !!thing.forward;
+const isIterator = (thing) =>
+  !!(thing && fp.isFunction(thing.forward));
 
 const iterator = (initFn) => {
   assert(
@@ -117,11 +118,15 @@ const iterator = (initFn) => {
       }));
 };
 
-function bind(initFn, iter) {
-  iter.bind(() => {
-    return Promise.try(initFn)
-      .then((thing) => makeIteratorFn(thing));
-  });
+function bind(source, seq) {
+  if (isEmitter(seq)) {
+    seq.bind(makeEmitterFn(source));
+  } else if (isIterator(seq)) {
+    seq.bind(() => {
+      return Promise.try(source)
+        .then((thing) => makeIteratorFn(thing));
+    });
+  }
 }
 
-module.exports = { isEmitter, isIterator, iterator, emitter, bind};
+module.exports = { isEmitter, isIterator, iterator, emitter, bind };

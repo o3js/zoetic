@@ -106,15 +106,10 @@ class Emitter {
     };
   }
 
-  forward(n, e, c) {
-    const self = this;
-    return self.subscribe(n, e, c);
-  }
-
   bind(lfn) {
     const self = this;
     assert(_.isFunction(lfn), 'Expected a function: ' + JSON.stringify(lfn));
-    assert(_.isUndefined(self._lfn), 'Stream is already bound');
+    assert(_.isUndefined(self._lfn), 'Emitter is already bound');
     self._lfn = lfn;
     tryConsuming(self);
     return self;

@@ -6,12 +6,6 @@ const Promise = require('bluebird');
 const { iterator, emitter, isIterator, isEmitter } = require('./core');
 const transduce = require('./transduce');
 
-const bind = (em, thing) => (
-  thing
-    ? em.bind(makeEmitterFn(thing), true)
-    : boundCallback(em)
-);
-
 /* eslint-disable no-use-before-define */
 const maxStacks = 50;
 function _forwardAll(iter, item, error, complete, count) {
@@ -37,31 +31,13 @@ function forwardAll(iter, item, error, complete) {
 }
 
 function each(n, e, c, seq) {
-  if (seq.subscribe) {
+  if (isEmitter(seq)) {
     seq.subscribe(n, e, c);
-  } else if (seq.forward) {
+  } else if (isIterator(seq)) {
     forwardAll(seq, n, e, c);
   } else {
     assert(false, 'Invalid type: ' + seq);
   }
-}
-
-function propagate(fn, init, seq) {
-  if (isEmitter(seq)) {
-    return emitter((n, e, c) => {
-      init();
-      seq.subscribe(...fn(n, e, c));
-    });
-  }
-  if (isIterator(seq)) {
-    return iterator(() => {
-      init();
-      return (n, e, c) => {
-        seq.forward(...fn(n, e, c));
-      };
-    });
-  }
-  return assert(false, 'Unrecognized sequence type');
 }
 
 const collect = (seq) => new Promise(
@@ -73,52 +49,6 @@ const collect = (seq) => new Promise(
       () => { resolve(items); },
       seq);
   });
-
-
-const seqXF = {
-  '@@transducer/init': () => {},
-  '@@transducer/result': (result) => {
-    result.complete();
-  },
-  '@@transducer/step': (result, input) => {
-    result.next(input);
-  },
-};
-
-function grease(transducer, seq) {
-  let result;
-  const xf = transducer(seqXF);
-  return propagate(
-    (next, error, complete) => {
-      result = { next, error, complete };
-      return [
-        (item) => xf['@@transducer/step'](result, item),
-        (err) => error(err),
-        () => xf['@@transducer/result'](result),
-      ];
-    },
-    () => { xf['@@transducer/init'](); },
-    seq
-  );
-}
-
-function resolve(xf) {
-  return {
-    '@@transducer/init': () => xf['@@transducer/init'](),
-    '@@transducer/result': (result) => {
-      xf['@@transducer/result'](result);
-    },
-    '@@transducer/step': (result, input) => {
-      Promise
-        .resolve(input)
-        .then(
-          (i) => xf['@@transducer/step'](result, i),
-          (result && result.error) || _.noop);
-    },
-  };
-}
-
-_.extend(grease, { emitter, collect });
 
 function transducerToOperation(td) {
   const arity = _s.parseParams(td).length;
@@ -138,14 +68,13 @@ function transducerToOperation(td) {
 
 const ops = fp.mapValues(transducerToOperation, transduce.transducer);
 
-console.log(ops);
-
 module.exports = _.extend(
   ops,
   {
     emitter,
     iterator,
     collect,
+    comp: transduce.comp,
     propagate: transduce.propagate,
   }
 );
