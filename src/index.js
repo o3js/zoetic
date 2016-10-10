@@ -54,13 +54,15 @@ function transducerToOperation(td) {
   const arity = _s.parseParams(td).length;
   const name = td.name;
   const op = function(...args) {
-    assert(args.length >= arity, 'Insufficient arguments');
+    assert(
+      args.length >= arity,
+      'Insufficient arguments, expected at least ' + arity);
     if (args.length === arity) {
       return td(...args);
     }
-    return transduce.propogate(
+    return transduce.propagate(
       [td(fp.take(arity, args))],
-      args[arity + 1]);
+      args[arity]);
   };
   op.name = name;
   return op;
