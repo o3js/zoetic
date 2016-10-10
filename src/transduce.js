@@ -21,7 +21,7 @@ function reduce(reducer, target, seq) {
       next: i => xf.n(i), error: err => xf.e(err), complete: () => xf.c() });
     bind(() => (next, error, complete) => {
       xf.n = next; xf.e = error; xf.c = complete;
-      seq.forward(
+      seq.next(
         i => r.next(i, fp.noop),
         err => r.error(err, fp.noop),
         () => r.complete()
@@ -47,11 +47,19 @@ function log(label) {
 
 function map(f) {
   return ({ next, error, complete }) => ({
-    next: (item, halt) => next(f(item), halt),
+    next: (item, halt) => { next(f(item), halt); },
     error,
     complete,
   });
 }
+
+// function cat() {
+//   return ({ next, error, complete }) => {
+//     return {
+//       next: _.noop,
+//     }
+//   };
+// }
 
 // Unwrap promises and yield them mainting the original
 // order of the promises in the seq

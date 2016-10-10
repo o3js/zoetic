@@ -18,18 +18,18 @@ const assertEmitter = (thing) => {
 
 const emitterFn = {
   fromArray: (arr) =>
-    (next, error, complete) => {
-      error = null;
-      fp.each((item) => { next(item); }, arr);
+    (emit, emitError, complete) => {
+      emitError = null;
+      fp.each((item) => { emit(item); }, arr);
       complete();
     },
-  fromPromise: (p) => (next, error, complete) => {
-    p.then(next, error).then(complete);
+  fromPromise: (p) => (emit, emitError, complete) => {
+    p.then(emit, emitError).then(complete);
   },
   fromStream: (s) => _.bind(s.subscribe, s),
   fromEventEmitter: (eventEmitter, eventName) =>
-    (next) => {
-      eventEmitter.on(eventName, next);
+    (emit) => {
+      eventEmitter.on(eventName, emit);
     },
 };
 
@@ -49,12 +49,6 @@ const makeEmitterFn = (thing) => {
   if (_.isFunction(thing)) {
     return thing;
   }
-  if (_.isFunction(thing.onChange)) {
-    return (next) => {
-      next(thing.value());
-      thing.onChange(next);
-    };
-  }
   assert(
     false,
     'Cannot build an emitter from: '
@@ -73,12 +67,12 @@ function emitter(thing) {
 // Iterator helpers
 //
 const iteratorFn = {
-  fromArray: (arr) => (next, error, complete) => {
+  fromArray: (arr) => (result, error, complete) => {
     if (arr.length === 0 && complete) complete();
-    else if (next) next(arr.shift());
+    else result(arr.shift());
   },
-  fromPromise: (p) => (next, error, complete) => {
-    p.then(next, error).then(complete);
+  fromPromise: (p) => (result, error, complete) => {
+    p.then(result, error).then(complete);
   },
 };
 
@@ -86,8 +80,8 @@ const makeIteratorFn = (thing) => {
   if (_.isArray(thing)) {
     return iteratorFn.fromArray(thing);
   }
-  if (_.isFunction(thing.forward)) {
-    return _.bind(thing.forward, thing);
+  if (_.isFunction(thing.next)) {
+    return _.bind(thing.next, thing);
   }
   if (_.isFunction(thing.then)) {
     return iteratorFn.fromPromise(thing);
@@ -103,7 +97,7 @@ const makeIteratorFn = (thing) => {
 };
 
 const isIterator = (thing) =>
-  !!(thing && fp.isFunction(thing.forward));
+  !!(thing && fp.isFunction(thing.next));
 
 const iterator = (initFn) => {
   assert(

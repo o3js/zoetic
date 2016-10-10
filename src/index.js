@@ -9,7 +9,7 @@ const transduce = require('./transduce');
 /* eslint-disable no-use-before-define */
 const maxStacks = 50;
 function _forwardAll(iter, item, error, complete, count) {
-  iter.forward(
+  iter.next(
     (data) => {
       item(data);
       if (count % maxStacks === 0)
@@ -61,7 +61,7 @@ function transducerToOperation(td) {
       return td(...args);
     }
     return transduce.propagate(
-      [td(...fp.take(arity, args))],
+      td(...fp.take(arity, args)),
       args[arity]);
   };
   op.name = name;

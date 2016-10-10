@@ -8,20 +8,16 @@ function configure(opts) {
 }
 
 
-function emitNext(subs, item) {
-  _.each(_.filter(subs), (sub) => { sub.next(item, sub.unsub); });
+function doEmit(subs, item) {
+  _.each(_.filter(subs), (sub) => { sub.emit(item, sub.unsub); });
 }
 
-function emitError(subs, err) {
-  _.each(_.filter(subs), (sub) => { sub.error(err, sub.unsub); });
+function doError(subs, err) {
+  _.each(_.filter(subs), (sub) => { sub.emitError(err, sub.unsub); });
 }
 
-function emitComplete(subs) {
+function doComplete(subs) {
   _.each(_.filter(subs), (sub) => { sub.complete(); });
-}
-
-function complete(subs) {
-  emitComplete(subs);
   while (subs.length) { subs.pop(); }
 }
 
@@ -30,18 +26,18 @@ function startConsuming(stream, subscribers, lazyFn) {
     (item) => {
       assert(!stream._completeCalled,
              'Tried to emit on stream after calling complete');
-      emitNext(subscribers, item);
+      doEmit(subscribers, item);
     },
     (err) => {
       assert(!stream._completeCalled,
              'Tried to emit error on stream after calling complete');
-      emitError(subscribers, err);
+      doError(subscribers, err);
     },
     () => {
       assert(!stream._completeCalled,
              'Tried to call complete on stream more than once');
       stream._completeCalled = true;
-      complete(subscribers);
+      doComplete(subscribers);
     }
   );
 }
@@ -53,16 +49,16 @@ function tryConsuming(stream) {
   }
 }
 
-function subscriber(n, e, c, unsub) {
+function subscriber(em, er, c, unsub) {
   return {
-    next: n,
+    emit: em,
     complete: c || _.noop,
-    error: e || ((err) => { throw err; }),
+    error: er || ((err) => { throw err; }),
     unsub,
   };
 }
 
-function addSubscriber(subs, n, e, c) {
+function addSubscriber(subs, em, er, c) {
   function unsub() {
     // We can't actually mutate the subscribers array at this point
     // because we are likely iterating over it.  So we nullify dead
@@ -73,7 +69,7 @@ function addSubscriber(subs, n, e, c) {
     subs[_.findIndex(subs, (s) => s === sub)] = null;
   }
 
-  const sub = subscriber(n, e, c, unsub);
+  const sub = subscriber(em, er, c, unsub);
 
   subs.push(sub);
 }
@@ -89,7 +85,7 @@ class Emitter {
     return self;
   }
 
-  subscribe(n, e, c) {
+  subscribe(emit, emitError, complete) {
     const self = this;
     if (self._isConsuming) {
       if (__debug) {
@@ -97,12 +93,11 @@ class Emitter {
         console.error('Stream already active: ', self._captureStack);
       }
     }
-    if (self._completeCalled && c) {
-      c();
-      return _.noop;
+    if (self._completeCalled && complete) {
+      complete();
     }
 
-    addSubscriber(self._subscribers, n, e, c);
+    addSubscriber(self._subscribers, emit, emitError, complete);
     tryConsuming(self);
   }
 
