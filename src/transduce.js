@@ -7,9 +7,8 @@ function reduce(reducer, target, seq) {
   if (isEmitter(target)) {
     bind((next, error, complete) => {
       const r = reducer({ next, error, complete });
-      let unsubscribe = null;
-      unsubscribe = seq.subscribe(
-        (item) => { r.next(item, unsubscribe); },
+      seq.subscribe(
+        r.next,
         r.error,
         r.complete);
     }, target);
@@ -22,7 +21,11 @@ function reduce(reducer, target, seq) {
       next: i => xf.n(i), error: err => xf.e(err), complete: () => xf.c() });
     bind(() => (next, error, complete) => {
       xf.n = next; xf.e = error; xf.c = complete;
-      seq.forward(i => r.next(i), err => r.error(err), () => r.complete());
+      seq.forward(
+        i => r.next(i, fp.noop),
+        err => r.error(err, fp.noop),
+        () => r.complete()
+      );
     }, target);
   } else {
     assert(false, 'Unrecognized sequence type');
@@ -66,10 +69,11 @@ function resolve() {
           .catch(error)
           .then((val) => {
             outstanding -= 1;
-            !halted && next(val, () => {
+            if (!halted) next(val, () => {
               chain.cancel();
               halted = true;
-            }, halt);
+              halt();
+            });
             if (!halted && completeCalled && !outstanding) {
               complete();
               complete = fp.noop;
@@ -92,11 +96,11 @@ function take(count) {
     let remaining = count;
     return {
       next: (item, halt) => {
+        next(item, halt);
+        remaining -= 1;
         if (remaining === 0) {
-          complete(); halt();
-        } else {
-          remaining -= 1;
-          next(item, halt);
+          halt();
+          complete();
         }
       },
       error,
@@ -105,13 +109,15 @@ function take(count) {
   };
 }
 
-function comp(...xfs) {
-  return (handlers) => {
-    return xfs[1]
-      ? xfs[0](comp(...fp.tail(xfs))(handlers))
-      : xfs[0](handlers);
-  };
-}
+// function comp(...xfs) {
+//   return (handlers) => {
+//     return xfs[1]
+//       ? xfs[0](comp(...fp.tail(xfs))(handlers))
+//       : xfs[0](handlers);
+//   };
+// }
+
+const comp = fp.flowRight;
 
 function propagate(xfs, seq) {
   return reduce(

@@ -61,7 +61,7 @@ function transducerToOperation(td) {
       return td(...args);
     }
     return transduce.propagate(
-      [td(fp.take(arity, args))],
+      [td(...fp.take(arity, args))],
       args[arity]);
   };
   op.name = name;

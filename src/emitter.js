@@ -9,11 +9,11 @@ function configure(opts) {
 
 
 function emitNext(subs, item) {
-  _.each(_.filter(subs), (sub) => { sub.next(item); });
+  _.each(_.filter(subs), (sub) => { sub.next(item, sub.unsub); });
 }
 
 function emitError(subs, err) {
-  _.each(_.filter(subs), (sub) => { sub.error(err); });
+  _.each(_.filter(subs), (sub) => { sub.error(err, sub.unsub); });
 }
 
 function emitComplete(subs) {
@@ -53,18 +53,29 @@ function tryConsuming(stream) {
   }
 }
 
-function subscriber(n, e, c) {
+function subscriber(n, e, c, unsub) {
   return {
     next: n,
     complete: c || _.noop,
     error: e || ((err) => { throw err; }),
+    unsub,
   };
 }
 
 function addSubscriber(subs, n, e, c) {
-  const sub = subscriber(n, e, c);
+  function unsub() {
+    // We can't actually mutate the subscribers array at this point
+    // because we are likely iterating over it.  So we nullify dead
+    // subscribers.  Might want to 'compact', i.e., rid the array of the
+    // null trash, at some point?
+
+    // eslint-disable-next-line no-use-before-define
+    subs[_.findIndex(subs, (s) => s === sub)] = null;
+  }
+
+  const sub = subscriber(n, e, c, unsub);
+
   subs.push(sub);
-  return sub;
 }
 
 class Emitter {
@@ -91,19 +102,8 @@ class Emitter {
       return _.noop;
     }
 
-    const aSubscriber = addSubscriber(self._subscribers, n, e, c);
+    addSubscriber(self._subscribers, n, e, c);
     tryConsuming(self);
-    return function unsubscribe() {
-      // We can't actually mutate the subscribers array at this point
-      // because we are likely iterating over it.  So we nullify dead
-      // subscribers.  Might want to 'compact', i.e., rid the array of the
-      // null trash, at some point?
-      self._subscribers[
-        _.findIndex(
-          self._subscribers,
-          (sub) => sub === aSubscriber
-        )] = null;
-    };
   }
 
   bind(lfn) {
