@@ -1,5 +1,4 @@
-const fp = require('lodash/fp');
-const { isEmitter, isIterator, emitter, iterator, bind, each } = require('./core');
+const { isEmitter, isIterator, iterator, bind, each } = require('./core');
 const assert = require('assert');
 const Promise = require('bluebird');
 
@@ -34,6 +33,7 @@ function tap(f) {
 }
 
 function log(label) {
+  // eslint-disable-next-line no-console
   return tap((item) => { console.log(label + ': ', item); });
 }
 
@@ -111,21 +111,8 @@ function take(count) {
   };
 }
 
-// function comp(...xfs) {
-//   return (handlers) => {
-//     return xfs[1]
-//       ? xfs[0](comp(...fp.tail(xfs))(handlers))
-//       : xfs[0](handlers);
-//   };
-// }
-
-const comp = fp.flowRight;
-
 function propagate(xfs, seq) {
-  return reduce(
-    comp(...(fp.isArray(xfs) ? xfs : [xfs])),
-    new seq.constructor(),
-    seq);
+  return reduce(xfs, new seq.constructor(), seq);
 }
 
 const transducer = {
@@ -136,4 +123,4 @@ const transducer = {
   log,
 };
 
-module.exports = { propagate, comp, transducer };
+module.exports = { propagate, transducer };

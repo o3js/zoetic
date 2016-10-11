@@ -3,7 +3,7 @@ const _s = require('sugar');
 const fp = require('lodash/fp');
 const assert = require('sugar').assert;
 const Promise = require('bluebird');
-const { iterator, emitter, each, isIterator, isEmitter } = require('./core');
+const { iterator, emitter, each } = require('./core');
 const transduce = require('./transduce');
 
 const collect = (seq) => new Promise(
@@ -19,7 +19,7 @@ const collect = (seq) => new Promise(
 function transducerToOperation(td) {
   const arity = _s.parseParams(td).length;
   const name = td.name;
-  const op = function(...args) {
+  const op = (...args) => {
     assert(
       args.length >= arity,
       'Insufficient arguments, expected at least ' + arity);

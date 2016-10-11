@@ -3,7 +3,6 @@ const fp = require('lodash/fp');
 const assert = require('sugar').assert;
 const Emitter = require('./emitter').Emitter;
 const Iterator = require('./iterator').Iterator;
-const Observable = require('./observable').Observable;
 const Promise = require('bluebird');
 
 //
@@ -12,9 +11,9 @@ const Promise = require('bluebird');
 const isEmitter = (thing) =>
         !!(thing && _.isFunction(thing.subscribe));
 
-const assertEmitter = (thing) => {
-  assert(isEmitter(thing), 'Not an Emitter: ' + JSON.stringify(thing));
-};
+// const assertEmitter = (thing) => {
+//   assert(isEmitter(thing), 'Not an Emitter: ' + JSON.stringify(thing));
+// };
 
 const emitterFn = {
   fromArray: (arr) =>
