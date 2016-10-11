@@ -66,6 +66,22 @@ function emitter(thing) {
 //
 // Iterator helpers
 //
+
+function push(item, buffer, bindings) {
+  if (buffer.length) {
+    buffer.push(item);
+  }
+  if (!buffer.length && !bindings.result) buffer.push(item);
+  else if (buffer.length && bindings.result) item = buffer.shift();
+
+  if (bindings.result) {
+    if (item[0] === 'result') bindings.result(item[1]);
+    else if (item[0] === 'error') bindings.error(item[1]);
+    else bindings.complete();
+    delete bindings.result;
+  }
+}
+
 const iteratorFn = {
   fromArray: (arr) => (result, error, complete) => {
     if (arr.length === 0 && complete) complete();
@@ -76,33 +92,20 @@ const iteratorFn = {
   },
   fromEmitter: (em) => {
     const buffer = [];
-    let completed = false;
-    let next;
+    let bindings = {};
     em.subscribe(
-      (item) => { buffer.push({ '@@result': item }); },
-      (err) => { buffer.push({ '@@error': err }); },
-      () => { completed = true; });
+      (item) => { push(['result', item], buffer, bindings); },
+      (err) => { push(['error', err], buffer, bindings); },
+      () => { push([], buffer, bindings); });
     return (result, error, complete) => {
       if (buffer.length) {
-        const next = buffer.shift();
-        if (next['@@result']) result(next['@@result']);
-        if (next['@@error']) error(next['@@error']);
-      } else if (completed) {
-        complete();
+        const item = buffer.shift();
+        if (item[0] === 'result') result(item[1]);
+        else if (item[0] === 'error') error(item[1]);
+        else complete();
       } else {
-        onEmit = (err, item) => {
-          if (err) error(err);
-          else if (item) result(item);
-          onEmit = fp.noop;
-          onComplete = fp.noop;
-        };
+        bindings = { result, error, complete };
       }
-        onComplete = () => {
-          if (err) error(err);
-          else if (item) result(item);
-          onEmit = fp.noop;
-          onComplete = fp.noop;
-        };
     };
   },
 };
