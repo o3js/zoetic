@@ -159,6 +159,14 @@ function bind(source, seq) {
   }
 }
 
+function isStreamy(thing) {
+  return isEmitter(thing) || isIterator(thing);
+}
+
+function assertIsStreamy(thing) {
+  assert(isStreamy(thing), 'Expected a streamy type: ' + thing);
+}
+
 /* eslint-disable no-use-before-define */
 const maxStacks = 50;
 function iteratorEach(iter, item, error, complete, count = 1) {
@@ -188,4 +196,13 @@ function each(n, e, c, seq) {
   }
 }
 
-module.exports = { isEmitter, isIterator, iterator, emitter, bind, each };
+module.exports = {
+  isEmitter,
+  isIterator,
+  isStreamy,
+  assertIsStreamy,
+  iterator,
+  emitter,
+  bind,
+  each,
+};

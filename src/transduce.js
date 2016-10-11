@@ -1,4 +1,12 @@
-const { isEmitter, isIterator, iterator, bind, each } = require('./core');
+const {
+  isEmitter,
+  isIterator,
+  assertIsStreamy,
+  iterator,
+  bind,
+  each,
+} = require('./core');
+const fp = require('lodash/fp');
 const assert = require('assert');
 const Promise = require('bluebird');
 
@@ -47,13 +55,39 @@ function map(f) {
     } });
 }
 
-// function cat() {
-//   return ({ next, error, complete }) => {
-//     return {
-//       next: _.noop,
-//     }
-//   };
-// }
+
+function _nextIter(state, xf, next, error, complete) {
+  xf.next(
+    (item) => {
+      assertIsStreamy(item);
+      state.currentIter = iterator(() => item);
+      state.currentIter.next(next, error, () => {
+        _nextIter();
+      });
+    },
+    error,
+    complete);
+}
+
+function cat() {
+  return (xf) => {
+    const state = {};
+    return {
+      next: (next, error, complete) => {
+        if (state.currentIter) {
+          state.currentIter.next(next, error, () => {
+            _nextIter(state, xf, next, error, complete);
+          });
+        } else {
+          _nextIter(state, xf, next, error, complete);
+        }
+      } };
+  };
+}
+
+function mapcat(f) {
+  return fp.flow(map(f), cat());
+}
 
 // Unwrap promises and yield them mainting the original
 // order of the promises in the seq
@@ -117,6 +151,8 @@ function propagate(xfs, seq) {
 
 const transducer = {
   map,
+  cat,
+  mapcat,
   take,
   resolve,
   tap,
