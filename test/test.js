@@ -17,49 +17,55 @@ module.exports = [
        z.collect(z.emitter([1, 2, 3])),
        [1, 2, 3]);
    }],
-   ['resolve promises in order', () => {
+   ['stream to iterator', () => {
      return assert.eventually.deepEqual(
-       z.collect(
-         z.resolve(
-           z.emitter(
-             [1, Promise.delay(10).then(() => 2), 3]))),
+       z.collect(z.iterator(() => z.emitter([1, 2, 3]))),
        [1, 2, 3]);
    }],
-  ],
-  ['transducing',
-   ['transducers have multiple arities', () => {
-     z.collect(z.map(i => i - 1, z.emitter([1, 2, 3])))
-       .then((r1) => {
-         return assert.eventually.deepEqual(
-           z.collect(z.propagate(z.map(i => i - 1), z.emitter([1, 2, 3]))), r1);
-       });
-   }],
-   ['All transducers support early termination', () => {
-     return Promise.each(
-       fp.toPairs(
-         { map: zt.map(fp.identity),
-           resolve: zt.resolve(),
-           tap: zt.tap(fp.noop) }),
-       fp.spread((name, tducer) => {
-         let halted = false;
-         const xf = fp.flow(
-           z.take(1),
-           tducer
-         )({ next: fp.noop, complete: fp.noop });
-         xf.next(1, () => {
-           halted = true;
-         });
-         return Promise.delay().then(() => {
-           assert(halted, 'Expected transducer to pass back halt: ' + name);
-         });
-       }));
-   }],
+  //  ['resolve promises in order', () => {
+  //    return assert.eventually.deepEqual(
+  //      z.collect(
+  //        z.resolve(
+  //          z.emitter(
+  //            [1, Promise.delay(10).then(() => 2), 3]))),
+  //      [1, 2, 3]);
+  //  }],
+  // ],
+  // ['transducing',
+  //  ['transducers have multiple arities', () => {
+  //    z.collect(z.map(i => i - 1, z.emitter([1, 2, 3])))
+  //      .then((r1) => {
+  //        return assert.eventually.deepEqual(
+  //          z.collect(z.propagate(z.map(i => i - 1), z.emitter([1, 2, 3]))), r1);
+  //      });
+  //  }],
+  //  ['All transducers support early termination', () => {
+  //    return Promise.each(
+  //      fp.toPairs(
+  //        { map: zt.map(fp.identity),
+  //          resolve: zt.resolve(),
+  //          tap: zt.tap(fp.noop) }),
+  //      fp.spread((name, tducer) => {
+  //        let halted = false;
+  //        const xf = fp.flow(
+  //          z.take(1),
+  //          tducer
+  //        )({ next: fp.noop, complete: fp.noop });
+  //        xf.next(1, () => {
+  //          halted = true;
+  //        });
+  //        return Promise.delay().then(() => {
+  //          assert(halted, 'Expected transducer to pass back halt: ' + name);
+  //        });
+  //      }));
+  //  }],
    ['iterator and emitter can share a composed transducer', () => {
-     const xform = fp.flow(
+     const xform = fp.flowRight(
        z.map(i => i - 1),
        z.map(i => i * 2),
        z.take(3),
-       z.resolve());
+       z.resolve()
+     );
 
 
      const source = () => fp.map(Promise.resolve, [1, 2, 3, 4, 5]);

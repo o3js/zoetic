@@ -1,31 +1,22 @@
 const fp = require('lodash/fp');
-const { isEmitter, isIterator, emitter, iterator, bind } = require('./core');
+const { isEmitter, isIterator, emitter, iterator, bind, each } = require('./core');
 const assert = require('assert');
 const Promise = require('bluebird');
 
+
 function reduce(reducer, target, seq) {
   if (isEmitter(target)) {
-    bind((next, error, complete) => {
-      const r = reducer({ next, error, complete });
-      seq.subscribe(
-        r.next,
-        r.error,
-        r.complete);
+    bind((emit, emitError, complete) => {
+      each(
+        emit,
+        emitError,
+        complete,
+        reducer(iterator(() => seq)));
     }, target);
   } else if (isIterator(target)) {
-    // Reducer can only be called once, but for an iterator, the
-    // bound source is called once per element, so we need to call
-    // the reducer outside the bind call.
-    const xf = { n: null, e: null, c: null };
-    const r = reducer({
-      next: i => xf.n(i), error: err => xf.e(err), complete: () => xf.c() });
-    bind(() => (next, error, complete) => {
-      xf.n = next; xf.e = error; xf.c = complete;
-      seq.next(
-        i => r.next(i, fp.noop),
-        err => r.error(err, fp.noop),
-        () => r.complete()
-      );
+    const xf = reducer(seq);
+    bind(() => (result, error, complete) => {
+      xf.next(result, error, complete);
     }, target);
   } else {
     assert(false, 'Unrecognized sequence type');
@@ -34,11 +25,12 @@ function reduce(reducer, target, seq) {
 }
 
 function tap(f) {
-  return ({ next, error, complete }) => ({
-    next: (item, halt) => { f(item); next(item, halt); },
-    error,
-    complete,
-  });
+  return (xf) => (result, error, complete) => {
+    xf.next(
+      (item) => { f(item); result(item); },
+      error,
+      complete);
+  };
 }
 
 function log(label) {
@@ -46,11 +38,13 @@ function log(label) {
 }
 
 function map(f) {
-  return ({ next, error, complete }) => ({
-    next: (item, halt) => { next(f(item), halt); },
-    error,
-    complete,
-  });
+  return (xf) => ({
+    next: (result, error, complete) => {
+      return xf.next(
+        (item) => result(f(item)),
+        error,
+        complete);
+    } });
 }
 
 // function cat() {
@@ -64,56 +58,56 @@ function map(f) {
 // Unwrap promises and yield them mainting the original
 // order of the promises in the seq
 function resolve() {
-  return ({ next, error, complete }) => {
+  return (xf) => {
     let completeCalled = false;
     let chain = Promise.resolve();
     let outstanding = 0;
-    let halted = false;
     return {
-      next: (item, halt) => {
-        outstanding += 1;
-        chain = chain
-          .then(() => item)
-          .catch(error)
-          .then((val) => {
-            outstanding -= 1;
-            if (!halted) next(val, () => {
-              chain.cancel();
-              halted = true;
-              halt();
-            });
-            if (!halted && completeCalled && !outstanding) {
+      next: (result, error, complete) => {
+        if (completeCalled) {
+          complete();
+          return;
+        }
+        xf.next(
+          (item) => {
+            outstanding += 1;
+            chain = chain
+              .then(() => item)
+              .catch(error)
+              .then((val) => {
+                outstanding -= 1;
+                result(val);
+              });
+          },
+          error,
+          () => {
+            completeCalled = true;
+            if (!outstanding) {
               complete();
-              complete = fp.noop;
             }
           });
-      },
-      error,
-      complete: () => {
-        completeCalled = true;
-        if (!outstanding) {
-          complete();
-        }
       },
     };
   };
 }
 
 function take(count) {
-  return ({ next, error, complete }) => {
+  return (xf) => {
     let remaining = count;
     return {
-      next: (item, halt) => {
-        next(item, halt);
-        remaining -= 1;
-        if (remaining === 0) {
-          halt();
-          complete();
-        }
-      },
-      error,
-      complete,
-    };
+      next: (result, error, complete) => {
+        xf.next(
+          (item) => {
+            if (remaining === 0) {
+              complete();
+            } else {
+              remaining -= 1;
+              result(item);
+            }
+          },
+          error,
+          complete);
+      } };
   };
 }
 
