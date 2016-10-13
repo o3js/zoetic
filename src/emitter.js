@@ -53,7 +53,7 @@ function subscriber(em, er, c, unsub) {
   return {
     emit: em,
     complete: c || _.noop,
-    error: er || ((err) => { throw err; }),
+    emitError: er || ((err) => { throw err; }),
     unsub,
   };
 }

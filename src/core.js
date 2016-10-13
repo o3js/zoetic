@@ -186,13 +186,15 @@ function iteratorEach(iter, item, error, complete, count = 1) {
     complete);
 }
 
-function each(n, e, c, seq) {
+function each(...args) {
+  const seq = fp.last(args);
+  const [n, e = fp.noop, c = fp.noop] = fp.take(args.length - 1, args);
   if (isEmitter(seq)) {
     seq.subscribe(n, e, c);
   } else if (isIterator(seq)) {
     iteratorEach(seq, n, e, c);
   } else {
-    assert(false, 'Invalid type: ' + seq);
+    assert(false, 'Expected a streamy type: ' + seq);
   }
 }
 

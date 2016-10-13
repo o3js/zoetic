@@ -16,6 +16,12 @@ module.exports = [
        z.collect(z.emitter([1, 2, 3])),
        [1, 2, 3]);
    }],
+   ['emit error', () => {
+     return assert.isRejected(
+       z.collect(z.emitter(Promise.try(() => {
+         throw new Error('fail');
+       }))));
+   }],
    ['stream to iterator', () => {
      return assert.eventually.deepEqual(
        z.collect(z.iterator(() => z.emitter([1, 2, 3]))),
@@ -68,6 +74,13 @@ module.exports = [
        [1, 2, 2, 3, 3, 3]);
    }],
 
+   ['filter', () => {
+     return assert.eventually.deepEqual(
+       z.collect(
+         z.filter(i => i < 3, z.emitter([1, 2, 3, 4]))),
+       [1, 2]);
+   }],
+
    ['iterator and emitter can share a composed transducer', () => {
      const xform = fp.flow(
        z.resolve(),
@@ -79,17 +92,18 @@ module.exports = [
              complete();
            });
          }),
-       z.map(i => i * 2)
+       z.map(i => i * 2),
+       z.filter(i => i % 4)
      );
      const source = () => fp.map(Promise.resolve, [1, 2, 3, 4, 5]);
 
      return Promise.all([
        assert.eventually.deepEqual(
          z.collect(z.propagate(xform, z.iterator(source))),
-         [2, 4, 4, 6, 6, 6]),
+         [2, 6, 6, 6]),
        assert.eventually.deepEqual(
          z.collect(z.propagate(xform, z.emitter(source()))),
-         [2, 4, 4, 6, 6, 6]),
+         [2, 6, 6, 6]),
      ]);
    }],
   ],

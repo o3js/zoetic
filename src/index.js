@@ -41,6 +41,7 @@ module.exports = _.extend(
   {
     emitter,
     iterator,
+    each,
     collect,
     comp: transduce.comp,
     propagate: transduce.propagate,

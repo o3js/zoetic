@@ -10,7 +10,6 @@ const fp = require('lodash/fp');
 const assert = require('assert');
 const Promise = require('bluebird');
 
-
 function reduce(reducer, target, seq) {
   if (isEmitter(target)) {
     bind((emit, emitError, complete) => {
@@ -32,12 +31,12 @@ function reduce(reducer, target, seq) {
 }
 
 function tap(f) {
-  return (xf) => (result, error, complete) => {
-    xf.next(
+  return (xf) => ({
+    next: (result, error, complete) => xf.next(
       (item) => { f(item); result(item); },
       error,
-      complete);
-  };
+      complete),
+  });
 }
 
 function log(label) {
@@ -55,6 +54,21 @@ function map(f) {
     } });
 }
 
+function filter(f) {
+  return (xf) => ({
+    next: (result, error, complete) => {
+      function untilFound() {
+        xf.next(
+          (item) => {
+            if (fp.iteratee(f)(item)) result(item);
+            else untilFound();
+          },
+          error,
+          complete);
+      }
+      untilFound();
+    } });
+}
 
 function _nextIter(state, xf, next, error, complete) {
   xf.next(
@@ -93,33 +107,12 @@ function mapcat(f) {
 // order of the promises in the seq
 function resolve() {
   return (xf) => {
-    let completeCalled = false;
-    let chain = Promise.resolve();
-    let outstanding = 0;
     return {
       next: (result, error, complete) => {
-        if (completeCalled) {
-          complete();
-          return;
-        }
         xf.next(
-          (item) => {
-            outstanding += 1;
-            chain = chain
-              .then(() => item)
-              .catch(error)
-              .then((val) => {
-                outstanding -= 1;
-                result(val);
-              });
-          },
+          (item) => { Promise.resolve(item).then(result, error); },
           error,
-          () => {
-            completeCalled = true;
-            if (!outstanding) {
-              complete();
-            }
-          });
+          complete);
       },
     };
   };
@@ -157,6 +150,7 @@ const transducer = {
   resolve,
   tap,
   log,
+  filter,
 };
 
 module.exports = { propagate, transducer };

@@ -24,7 +24,7 @@ class Iterator {
     assert(
       this._outstanding === 1,
       'Iterator functional has already resolved');
-    this._outstanging -= 1;
+    this._outstanding -= 1;
     this._e(err);
   }
 
@@ -32,7 +32,7 @@ class Iterator {
     assert(
       this._outstanding === 1,
       'Iterator functional has already resolved');
-    this._outstanging -= 1;
+    this._outstanding -= 1;
     this._c();
   }
 
@@ -41,7 +41,7 @@ class Iterator {
     // why you'd want to synchronously call forward multiple times.
     assert(
       this._outstanding === 0,
-      'Iterator can\'t be called twice before returning');
+      'Iterator can\'t be called twice before returning: ' + this._outstanding);
 
     // initialize callbacks
     this._outstanding += 1;
