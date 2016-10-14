@@ -70,13 +70,17 @@ function filter(f) {
     } });
 }
 
+function reject(f) {
+  return filter((...args) => !f(...args));
+}
+
 function _nextIter(state, xf, next, error, complete) {
   xf.next(
     (item) => {
       assertIsStreamy(item);
       state.currentIter = iterator(() => item);
       state.currentIter.next(next, error, () => {
-        _nextIter();
+        _nextIter(state, xf, next, error, complete);
       });
     },
     error,
@@ -138,7 +142,10 @@ function take(count) {
   };
 }
 
-function propagate(xfs, seq) {
+function propagate(...args) {
+  const seq = fp.last(args);
+  args.pop();
+  const xfs = fp.flowRight(fp.flatten([args]));
   return reduce(xfs, new seq.constructor(), seq);
 }
 
@@ -151,6 +158,7 @@ const transducer = {
   tap,
   log,
   filter,
+  reject,
 };
 
 module.exports = { propagate, transducer };

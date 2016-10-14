@@ -60,6 +60,18 @@ module.exports = [
        [1, 2, 3, 4, 5, 'a', 6]);
    }],
 
+   ['catting empty streams', () => {
+     return assert.eventually.deepEqual(
+       z.collect(
+         z.cat(
+           z.iterator(() => [
+             z.iterator(() => []),
+             z.iterator(() => []),
+             z.emitter([]),
+           ]))),
+       []);
+   }],
+
    ['mapcat', () => {
      return assert.eventually.deepEqual(
        z.collect(
