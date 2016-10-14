@@ -10,22 +10,25 @@ const fp = require('lodash/fp');
 const assert = require('assert');
 const Promise = require('bluebird');
 
-function reduce(reducer, target, seq) {
+function reduce(reducer, target, source) {
+  const sourceIter =
+    isIterator(source) ? source : iterator(() => source);
+  const xf = reducer(sourceIter);
+
   if (isEmitter(target)) {
     bind((emit, emitError, complete) => {
       each(
         emit,
         emitError,
         complete,
-        reducer(iterator(() => seq)));
+        xf);
     }, target);
   } else if (isIterator(target)) {
-    const xf = reducer(seq);
     bind(() => (result, error, complete) => {
       xf.next(result, error, complete);
     }, target);
   } else {
-    assert(false, 'Unrecognized sequence type');
+    assert(false, 'Expected target to be a streamy type');
   }
   return target;
 }
