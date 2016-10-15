@@ -135,17 +135,24 @@ const makeIteratorFn = (thing) => {
 const isIterator = (thing) =>
   !!(thing && fp.isFunction(thing.next));
 
-const iterator = (initFn) => {
+// If iterator() is given a function, this is lazily called and the
+// resolved result is used to build the iterator's worker function.
+//
+// If iterator() is given a promise, we construct an iterator that will
+// return a single value: the resolution of the promise.
+const iterator = (init) => {
   assert(
-    _.isUndefined(initFn) || _.isFunction(initFn),
-    'Expected a function: ' + initFn);
+    _.isUndefined(init) || _.isFunction(init) || _.isFunction(init.then),
+    'Expected a function or promise: ' + init);
   return (
-    _.isUndefined(initFn)
+    _.isUndefined(init)
       ? new Iterator()
-      : new Iterator(() => {
-        return Promise.try(initFn)
-          .then((thing) => makeIteratorFn(thing));
-      }));
+      : (_.isFunction(init.then)
+         ? new Iterator(() => init.then((val) => makeIteratorFn([val])))
+         : new Iterator(() => {
+           return Promise.try(init)
+             .then((thing) => makeIteratorFn(thing));
+         })));
 };
 
 function bind(source, seq) {
