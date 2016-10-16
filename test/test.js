@@ -93,6 +93,27 @@ module.exports = [
        [1, 2]);
    }],
 
+   ['takeNth', () => {
+     return assert.eventually.deepEqual(
+       z.collect(
+         z.takeNth(2, z.emitter([0, 1, 2, 3, 4, 5]))),
+       [0, 2, 4]);
+   }],
+
+   ['drop', () => {
+     return assert.eventually.deepEqual(
+       z.collect(
+         z.drop(2, z.emitter([0, 1, 2, 3, 4, 5]))),
+       [2, 3, 4, 5]);
+   }],
+
+   ['mapIndexed', () => {
+     return assert.eventually.deepEqual(
+       z.collect(
+         z.mapIndexed((i, v) => [i, v], z.emitter(['a', 'b', 'c']))),
+       [[0, 'a'], [1, 'b'], [2, 'c']]);
+   }],
+
    ['iterator and emitter can share a composed transducer', () => {
      const xform = fp.flow(
        z.resolve(),

@@ -77,6 +77,46 @@ function reject(f) {
   return filter((...args) => !f(...args));
 }
 
+function takeNth(n) {
+  return (xf) => {
+    let skip = 0;
+    return filter(() => {
+      if (!skip) {
+        skip = n - 1;
+        return true;
+      }
+      skip -= 1;
+      return false;
+    })(xf);
+  };
+}
+
+function drop(n) {
+  return (xf) => {
+    let skip = n;
+    return filter(() => {
+      if (skip) {
+        skip -= 1;
+        return false;
+      }
+      return true;
+    })(xf);
+  };
+}
+
+function mapIndexed(f) {
+  return (xf) => {
+    let curIndex = 0;
+    return {
+      next: (next, error, complete) => {
+        xf.next(
+          (item) => next(f(curIndex++, item)),
+          error,
+          complete);
+      } };
+  };
+}
+
 function _nextIter(state, xf, next, error, complete) {
   xf.next(
     (item) => {
@@ -162,6 +202,9 @@ const transducer = {
   log,
   filter,
   reject,
+  takeNth,
+  drop,
+  mapIndexed,
 };
 
 module.exports = { propagate, transducer };
