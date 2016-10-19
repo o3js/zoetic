@@ -117,6 +117,7 @@ module.exports = [
    ['iterator and emitter can share a composed transducer', () => {
      const xform = fp.flow(
        z.resolve(),
+       z.buffer(2),
        z.take(3),
        z.mapcat(
          (num) => {

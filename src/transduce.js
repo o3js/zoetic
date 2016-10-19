@@ -165,6 +165,79 @@ function resolve() {
   };
 }
 
+function bufferedIter(size, input) {
+  const items = new Array(size);
+  let outBlocked = null;
+  let finished = false;
+  let rIdx = -1;
+  let wIdx = -1;
+
+  function bufIdx(absoluteIdx) {
+    return absoluteIdx % size;
+  }
+
+  function bufferedItems() {
+    return wIdx - rIdx;
+  }
+
+  function bufferFull() {
+    return size === bufferedItems();
+  }
+
+  function writeHandler(type, recur) {
+    return (thing) => {
+      if (outBlocked) {
+        outBlocked[type](thing);
+        outBlocked = null;
+      } else {
+        wIdx += 1;
+        const item = {};
+        item[type] = thing;
+        items[bufIdx(wIdx)] = item;
+      }
+      if (!bufferFull()) recur(input);
+    };
+  }
+
+  function write() {
+    input.next(
+      writeHandler('result', write),
+      writeHandler('error', write),
+      () => {
+        finished = true;
+        if (outBlocked) outBlocked.complete();
+      }
+    );
+  }
+
+  return iterator(() => {
+    write();
+    return (result, error, complete) => {
+      assert(!outBlocked);
+      if (!bufferedItems() && finished) {
+        complete();
+        return;
+      }
+      if (rIdx < wIdx) {
+        const bufferWasFull = bufferFull();
+        rIdx += 1;
+        if (items[bufIdx(rIdx)].result) result(items[bufIdx(rIdx)].result);
+        else error(items[bufIdx(rIdx)].error);
+        outBlocked = null;
+        if (bufferWasFull) {
+          write();
+        }
+      } else {
+        outBlocked = { result, error, complete };
+      }
+    };
+  });
+}
+
+function buffer(num) {
+  return (xf) => bufferedIter(num, xf);
+}
+
 function take(count) {
   return (xf) => {
     let remaining = count;
@@ -205,6 +278,7 @@ const transducer = {
   takeNth,
   drop,
   mapIndexed,
+  buffer,
 };
 
 module.exports = { propagate, transducer };
