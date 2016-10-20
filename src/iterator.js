@@ -3,6 +3,7 @@ const assert = require('assert');
 
 class Iterator {
   constructor(lazyInit) {
+    this._stack = new Error().stack;
     this._lazyInit = lazyInit;
     this._initializationError = null;
     this._outstanding = 0;
@@ -15,7 +16,7 @@ class Iterator {
   _result(item) {
     assert(
       this._outstanding === 1,
-      'Iterator functional has already resolved');
+      'Iterator functional has already called back');
     this._outstanding -= 1;
     this._r(item);
   }
@@ -23,7 +24,7 @@ class Iterator {
   _error(err) {
     assert(
       this._outstanding === 1,
-      'Iterator functional has already resolved');
+      'Iterator functional has already called back');
     this._outstanding -= 1;
     this._e(err);
   }
@@ -31,7 +32,7 @@ class Iterator {
   _complete() {
     assert(
       this._outstanding === 1,
-      'Iterator functional has already resolved');
+      'Iterator functional has already called back');
     this._outstanding -= 1;
     this._c();
   }
@@ -41,7 +42,7 @@ class Iterator {
     // why you'd want to synchronously call forward multiple times.
     assert(
       this._outstanding === 0,
-      'Iterator can\'t be called twice before returning: ' + this._outstanding);
+      'Iterator can\'t be called twice before returning');
 
     // initialize callbacks
     this._outstanding += 1;

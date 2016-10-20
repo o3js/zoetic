@@ -243,17 +243,62 @@ function take(count) {
     let remaining = count;
     return {
       next: (result, error, complete) => {
+        if (remaining === 0) {
+          complete();
+          return;
+        }
         xf.next(
           (item) => {
-            if (remaining === 0) {
-              complete();
-            } else {
-              remaining -= 1;
-              result(item);
-            }
+            remaining -= 1;
+            result(item);
           },
           error,
           complete);
+      } };
+  };
+}
+
+function collect() {
+  return (xf) => {
+    const items = [];
+    let completed = false;
+    return {
+      next: (result, error, complete) => {
+        if (completed) {
+          complete();
+          return;
+        }
+        each(
+          (item) => { items.push(item); },
+          (err) => { if (!completed) { completed = true; error(err); } },
+          () => { if (!completed) { completed = true; result(items); } },
+          xf);
+      } };
+  };
+}
+
+function partition(num) {
+  return (xf) => {
+    let completed = false;
+    return {
+      next: (result, error, complete) => {
+        if (completed) {
+          complete();
+          return;
+        }
+        collect()(take(num)(xf))
+          .next(
+            (items) => {
+              if (items.length === num) result(items);
+              else if (items.length === 0) {
+                complete();
+              } else if (items.length < num) {
+                completed = true;
+                result(items);
+              }
+            },
+            error,
+            complete);
       } };
   };
 }
@@ -279,6 +324,8 @@ const transducer = {
   drop,
   mapIndexed,
   buffer,
+  partition,
+  collect,
 };
 
 module.exports = { propagate, transducer };

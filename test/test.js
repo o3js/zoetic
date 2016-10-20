@@ -1,6 +1,11 @@
+const Promise = require('bluebird');
+
+Promise.config({
+  longStackTraces: true,
+});
+
 const z = require('../src/index');
 const assert = require('chai').assert;
-const Promise = require('bluebird');
 const fp = require('lodash/fp');
 
 
@@ -8,28 +13,29 @@ module.exports = [
   ['basics',
    ['collect iterator', () => {
      return assert.eventually.deepEqual(
-       z.collect(z.iterator(() => [1, 2, 3])),
+       z.collected(z.iterator(() => [1, 2, 3])),
        [1, 2, 3]);
    }],
    ['collect emitter', () => {
      return assert.eventually.deepEqual(
-       z.collect(z.emitter([1, 2, 3])),
+       z.collected(z.emitter([1, 2, 3])),
        [1, 2, 3]);
    }],
    ['emit error', () => {
      return assert.isRejected(
-       z.collect(z.emitter(Promise.try(() => {
-         throw new Error('fail');
-       }))));
+       z.collected(
+         z.emitter(Promise.try(() => {
+           throw new Error('fail');
+         }))));
    }],
    ['stream to iterator', () => {
      return assert.eventually.deepEqual(
-       z.collect(z.iterator(() => z.emitter([1, 2, 3]))),
+       z.collected(z.iterator(() => z.emitter([1, 2, 3]))),
        [1, 2, 3]);
    }],
    ['resolve promises in order', () => {
      return assert.eventually.deepEqual(
-       z.collect(
+       z.collected(
          z.resolve(
            z.emitter(
              [1, Promise.delay(10).then(() => 2), 3]))),
@@ -40,16 +46,17 @@ module.exports = [
   ['transducing',
 
    ['transducers have multiple arities', () => {
-     z.collect(z.map(i => i - 1, z.emitter([1, 2, 3])))
+     z.collected(z.map(i => i - 1, z.emitter([1, 2, 3])))
        .then((r1) => {
          return assert.eventually.deepEqual(
-           z.collect(z.propagate(z.map(i => i - 1), z.emitter([1, 2, 3]))), r1);
+           z.collected(
+             z.propagate(z.map(i => i - 1), z.emitter([1, 2, 3]))), r1);
        });
    }],
 
    ['cat stream of iterators and emitters', () => {
      return assert.eventually.deepEqual(
-       z.collect(
+       z.collected(
          z.cat(
            z.iterator(() => [
              z.iterator(() => [1, 2, 3]),
@@ -62,7 +69,7 @@ module.exports = [
 
    ['catting empty streams', () => {
      return assert.eventually.deepEqual(
-       z.collect(
+       z.collected(
          z.cat(
            z.iterator(() => [
              z.iterator(() => []),
@@ -74,7 +81,7 @@ module.exports = [
 
    ['mapcat', () => {
      return assert.eventually.deepEqual(
-       z.collect(
+       z.collected(
          z.mapcat(
            (num) => {
              return z.emitter((next, error, complete) => {
@@ -88,30 +95,65 @@ module.exports = [
 
    ['filter', () => {
      return assert.eventually.deepEqual(
-       z.collect(
+       z.collected(
          z.filter(i => i < 3, z.emitter([1, 2, 3, 4]))),
        [1, 2]);
    }],
 
+   ['take',
+    ['bugfix: take doesn\'t discard anything', () => {
+      const items = z.iterator(() => [0, 1, 2, 3, 4, 5]);
+      return assert.eventually.deepEqual(
+        z.collected(z.take(2, items)),
+        [0, 1])
+        .then(() => {
+          return assert.eventually.deepEqual(
+            z.collected(z.take(2, items)),
+            [2, 3]);
+        });
+    }],
+   ],
+
    ['takeNth', () => {
      return assert.eventually.deepEqual(
-       z.collect(
+       z.collected(
          z.takeNth(2, z.emitter([0, 1, 2, 3, 4, 5]))),
        [0, 2, 4]);
    }],
 
    ['drop', () => {
      return assert.eventually.deepEqual(
-       z.collect(
+       z.collected(
          z.drop(2, z.emitter([0, 1, 2, 3, 4, 5]))),
        [2, 3, 4, 5]);
    }],
 
    ['mapIndexed', () => {
      return assert.eventually.deepEqual(
-       z.collect(
+       z.collected(
          z.mapIndexed((i, v) => [i, v], z.emitter(['a', 'b', 'c']))),
        [[0, 'a'], [1, 'b'], [2, 'c']]);
+   }],
+
+   ['partition', () => {
+     return assert.eventually.deepEqual(
+       z.collected(
+         z.partition(2, z.iterator(() => [1, 2, 3, 4, 5, 6]))),
+       [[1, 2], [3, 4], [5, 6]]);
+   }],
+
+   ['partition incomplete', () => {
+     return assert.eventually.deepEqual(
+       z.collected(
+         z.partition(2, z.iterator(() => [1, 2, 3, 4, 5]))),
+       [[1, 2], [3, 4], [5]]);
+   }],
+
+   ['collect', () => {
+     return assert.eventually.deepEqual(
+       z.collected(
+         z.collect(z.iterator(() => [1, 2, 3]))),
+       [[1, 2, 3]]);
    }],
 
    ['iterator and emitter can share a composed transducer', () => {
@@ -133,10 +175,10 @@ module.exports = [
 
      return Promise.all([
        assert.eventually.deepEqual(
-         z.collect(z.propagate(xform, z.iterator(source))),
+         z.collected(z.propagate(xform, z.iterator(source))),
          [2, 6, 6, 6]),
        assert.eventually.deepEqual(
-         z.collect(z.propagate(xform, z.emitter(source()))),
+         z.collected(z.propagate(xform, z.emitter(source()))),
          [2, 6, 6, 6]),
      ]);
    }],

@@ -2,19 +2,9 @@ const _ = require('lodash');
 const _s = require('sugar');
 const fp = require('lodash/fp');
 const assert = require('sugar').assert;
-const Promise = require('bluebird');
 const { iterator, emitter, each } = require('./core');
 const transduce = require('./transduce');
-
-const collect = (seq) => new Promise(
-  (resolve, reject) => {
-    const items = [];
-    each(
-      (item) => { items.push(item); },
-      (err) => { reject(err); reject = _.noop; },
-      () => { resolve(items); },
-      seq);
-  });
+const Promise = require('bluebird');
 
 function transducerToOperation(td) {
   const arity = _s.parseParams(td).length;
@@ -36,13 +26,24 @@ function transducerToOperation(td) {
 
 const ops = fp.mapValues(transducerToOperation, transduce.transducer);
 
+const collected = (seq) => {
+  return new Promise(
+    (resolve, reject) => {
+      each(
+        resolve,
+        reject,
+        () => {},
+        ops.take(1, ops.collect(seq)));
+    });
+};
+
 module.exports = _.extend(
   ops,
   {
     emitter,
     iterator,
     each,
-    collect,
+    collected,
     comp: transduce.comp,
     propagate: transduce.propagate,
   }
