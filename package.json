@@ -1,6 +1,6 @@
 {
   "name": "zoetic",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Minimal, streamy data structures. Push with emitter, pull with iterator, and model changing values with observable.",
   "main": "src/index.js",
   "scripts": {
