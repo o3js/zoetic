@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const assert = require('sugar').assert;
+const assert = require('o3-sugar').assert;
 
 let __debug;
 

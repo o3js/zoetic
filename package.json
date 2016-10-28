@@ -1,11 +1,10 @@
 {
   "name": "zoetic",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "description": "Minimal, streamy data structures. Push with emitter, pull with iterator, and model changing values with observable.",
   "main": "src/index.js",
   "scripts": {
-    "test": "./runtests.sh",
-    "postinstall": "npm link mocha-brackets; npm link sugar"
+    "test": "./runtests.sh"
   },
   "repository": {
     "type": "git",
@@ -37,6 +36,7 @@
   "dependencies": {
     "bluebird": "^3.4.6",
     "lodash": "^4.15.0",
-    "sugar": "file:../sugar"
+    "mocha-brackets": "*",
+    "o3-sugar": "*"
   }
 }
