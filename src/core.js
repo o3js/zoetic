@@ -174,6 +174,7 @@ function boundCallback(str, mapper) {
   };
 }
 
+// eslint-disable-next-line consistent-return
 function bind(source, seq) {
   if (!seq) return boundCallback(source);
   if (isEmitter(seq)) {
