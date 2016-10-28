@@ -155,7 +155,27 @@ const iterator = (init) => {
          })));
 };
 
+function boundCallback(str, mapper) {
+  assert(!mapper || _.isFunction(mapper),
+         'expected a function: ' + JSON.stringify(mapper));
+  let n;
+  str.bind((next) => {
+    n = next;
+  }, true);
+  return (item) => {
+    if (n) {
+      n(
+        _.isFunction(mapper)
+          ? mapper(item)
+          : (_.isUndefined(mapper)
+             ? item
+             : mapper));
+    }
+  };
+}
+
 function bind(source, seq) {
+  if (!seq) return boundCallback(source);
   if (isEmitter(seq)) {
     seq.bind(makeEmitterFn(source));
   } else if (isIterator(seq)) {

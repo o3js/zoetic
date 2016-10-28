@@ -2,7 +2,7 @@ const _ = require('lodash');
 const _s = require('sugar');
 const fp = require('lodash/fp');
 const assert = require('sugar').assert;
-const { iterator, emitter, each } = require('./core');
+const { iterator, emitter, each, bind } = require('./core');
 const transduce = require('./transduce');
 const Promise = require('bluebird');
 
@@ -43,6 +43,7 @@ module.exports = _.extend(
     emitter,
     iterator,
     each,
+    bind,
     collected,
     comp: transduce.comp,
     propagate: transduce.propagate,
