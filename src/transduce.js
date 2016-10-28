@@ -213,7 +213,8 @@ function bufferedIter(size, input) {
   return iterator(() => {
     write();
     return (result, error, complete) => {
-      assert(!outBlocked);
+      assert(!outBlocked,
+             'Can\'t call next when buffer is already blocking on more data');
       if (!bufferedItems() && finished) {
         complete();
         return;
