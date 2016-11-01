@@ -3,6 +3,7 @@ const fp = require('lodash/fp');
 const assert = require('o3-sugar').assert;
 const Emitter = require('./emitter').Emitter;
 const Iterator = require('./iterator').Iterator;
+const Observable = require('./observable').Observable;
 const Promise = require('bluebird');
 
 //
@@ -62,6 +63,9 @@ function emitter(thing) {
   return str;
 }
 
+function observable(initial, thing) {
+  return new Observable(initial, emitter(thing));
+}
 //
 // Iterator helpers
 //
@@ -233,6 +237,7 @@ module.exports = {
   assertIsStreamy,
   iterator,
   emitter,
+  observable,
   bind,
   each,
 };

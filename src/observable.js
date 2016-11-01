@@ -1,6 +1,6 @@
 // const s = require('./stream');
 
-class GreedyObservable {
+class Observable {
 
   constructor(initialValue, str) {
     const self = this;
@@ -32,4 +32,4 @@ class GreedyObservable {
   }
 }
 
-module.exports = { GreedyObservable };
+module.exports = { Observable };

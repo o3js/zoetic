@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const _s = require('o3-sugar');
 const fp = require('lodash/fp');
-const { iterator, emitter, each, bind } = require('./core');
+const { observable, iterator, emitter, each, bind } = require('./core');
 const transduce = require('./transduce');
 const Promise = require('bluebird');
 
@@ -43,6 +43,7 @@ module.exports = _.extend(
   {
     emitter,
     iterator,
+    observable,
     each,
     bind,
     collected,
