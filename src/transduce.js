@@ -239,6 +239,10 @@ function buffer(num) {
   return (xf) => bufferedIter(num, xf);
 }
 
+function bufResolve(num) {
+  return fp.flow(buffer(num), resolve());
+}
+
 function take(count) {
   return (xf) => {
     let remaining = count;
@@ -326,6 +330,7 @@ const transducer = {
   mapIndexed,
   buffer,
   partition,
+  bufResolve,
   collect,
 };
 
