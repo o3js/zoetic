@@ -90,9 +90,6 @@ const iteratorFn = {
     if (arr.length === 0 && complete) complete();
     else result(arr.shift());
   },
-  fromPromise: (p) => (result, error, complete) => {
-    p.then(result, error).then(complete);
-  },
   fromEmitter: (em) => {
     const buffer = [];
     let bindings = {};
@@ -122,9 +119,6 @@ const makeIteratorFn = (thing) => {
   }
   if (_.isFunction(thing.next)) {
     return _.bind(thing.next, thing);
-  }
-  if (_.isFunction(thing.then)) {
-    return iteratorFn.fromPromise(thing);
   }
   if (_.isFunction(thing)) {
     return thing;

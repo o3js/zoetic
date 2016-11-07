@@ -114,6 +114,49 @@ module.exports = [
     }],
    ],
 
+   ['iterator',
+    ['bugfix: error on init doesn\'t bust iterator', () => {
+      const errorIter = z.iterator(Promise.reject('error'));
+
+      return assert.eventually.equal(
+        new Promise((resolve) => {
+          z.each(
+            fp.noop,
+            fp.noop,
+            () => { resolve(true); },
+            errorIter);
+        }),
+        true);
+    }],
+   ],
+   ['buffer',
+    ['bugfix: error doesn\'t break iterator contract', () => {
+      const errorIter = z.iterator(Promise.reject('error'));
+
+      // With the bug, the iterator would stop wirking if the buffer
+      // hit an error. It should emit the error, but continue;
+      const errorWhenBuffering = z.propagate(
+        z.buffer(10),
+        z.cat(),
+        z.iterator(() => {
+          return [
+            z.emitter([1, 2, 3]),
+            errorIter,
+            z.emitter([4, 5, 6])];
+        }));
+      let last;
+      return assert.eventually.equal(
+        new Promise((resolve) => {
+          z.each(
+            (item) => { last = item; },
+            fp.noop,
+            () => { resolve(last); },
+            errorWhenBuffering);
+        }),
+        6);
+    }],
+   ],
+
    ['takeNth', () => {
      return assert.eventually.deepEqual(
        z.collected(

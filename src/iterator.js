@@ -1,8 +1,11 @@
 const fp = require('lodash/fp');
 const assert = require('assert');
 
+let name = 0;
+
 class Iterator {
   constructor(lazyInit) {
+    this._name = name++;
     this._stack = new Error().stack;
     this._lazyInit = lazyInit;
     this._initializationError = null;
@@ -16,7 +19,7 @@ class Iterator {
   _result(item) {
     assert(
       this._outstanding === 1,
-      'Iterator functional has already called back');
+      'Illegal item -- terator function has already called back');
     this._outstanding -= 1;
     this._r(item);
   }
@@ -24,7 +27,7 @@ class Iterator {
   _error(err) {
     assert(
       this._outstanding === 1,
-      'Iterator functional has already called back');
+      'Illegal err - iterator function has already called back');
     this._outstanding -= 1;
     this._e(err);
   }
@@ -32,7 +35,7 @@ class Iterator {
   _complete() {
     assert(
       this._outstanding === 1,
-      'Iterator functional has already called back');
+      'Illegal complete - iterator function has already called back');
     this._outstanding -= 1;
     this._c();
   }
@@ -51,7 +54,10 @@ class Iterator {
     this._c = complete || fp.noop;
     [result, error, complete] = [null, null, null];
 
-    if (this._initializationError) this._complete();
+    if (this._initializationError) {
+      this._complete();
+      return;
+    }
 
     if (this._fn) {
       this._fn(this._result, this._error, this._complete);
@@ -60,12 +66,13 @@ class Iterator {
         ._lazyInit()
         .then(
           (fn) => {
+            this._happy = true;
             this._fn = fn;
             fn(this._result, this._error, this._complete);
           },
           (err) => {
-            this._error(err);
             this._initializationError = err;
+            this._error(err);
           });
     }
   }

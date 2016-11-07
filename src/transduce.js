@@ -187,8 +187,10 @@ function bufferedIter(size, input) {
   function writeHandler(type, recur) {
     return (thing) => {
       if (outBlocked) {
-        outBlocked[type](thing);
+        const out = outBlocked;
+        // must set this to null *before* propagating the output
         outBlocked = null;
+        out[type](thing);
       } else {
         wIdx += 1;
         const item = {};
