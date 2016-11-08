@@ -241,6 +241,25 @@ function buffer(num) {
   return (xf) => bufferedIter(num, xf);
 }
 
+function debounce(t) {
+  let myTimeout;
+  return (xf) => ({
+    next: (result, error, complete) => {
+      let flushed;
+      let completed;
+      each((item) => {
+        flushed = false;
+        if (myTimeout) clearTimeout(myTimeout);
+        myTimeout = setTimeout(() => {
+          result(item);
+          flushed = true;
+          if (completed) complete();
+        }, t);
+      }, xf);
+    },
+  });
+}
+
 function bufResolve(num) {
   return fp.flow(buffer(num), resolve());
 }
@@ -333,6 +352,7 @@ const transducer = {
   buffer,
   partition,
   bufResolve,
+  debounce,
   collect,
 };
 
