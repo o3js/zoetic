@@ -264,6 +264,42 @@ function bufResolve(num) {
   return fp.flow(buffer(num), resolve());
 }
 
+function latest(count) {
+  return (xf) => {
+    const buffered = [];
+    return {
+      next: (result, error, complete) => {
+        function until() {
+          xf.next((item) => {
+            buffered.push(item);
+            if (buffered.length > count) buffered.shift();
+            if (buffered.length === count) result(fp.clone(buffered));
+            else until();
+          }, error, complete);
+        }
+        until();
+      } };
+  };
+}
+
+function startWith(startItem) {
+  return (xf) => {
+    let waiting = true;
+    return {
+      next: (result, error, complete) => {
+        if (waiting) {
+          waiting = false;
+          result(startItem);
+        } else {
+          xf.next(
+            result,
+            error,
+            complete);
+        }
+      } };
+  };
+}
+
 function take(count) {
   return (xf) => {
     let remaining = count;
@@ -354,6 +390,8 @@ const transducer = {
   bufResolve,
   debounce,
   collect,
+  latest,
+  startWith,
 };
 
 module.exports = { propagate, transducer };

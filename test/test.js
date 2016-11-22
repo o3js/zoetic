@@ -114,6 +114,22 @@ module.exports = [
     }],
    ],
 
+   ['latest',
+    ['basics', () => {
+      const items = z.emitter([0, 1, 2]);
+      return assert.eventually.deepEqual(
+        z.collected(z.latest(2, items)),
+        [[0, 1], [1, 2]]);
+    }]],
+
+   ['startWith',
+    ['basics', () => {
+      const items = z.startWith(0, z.emitter([1, 2]));
+      return assert.eventually.deepEqual(
+        z.collected(items),
+        [0, 1, 2]);
+    }]],
+
    ['iterator',
     ['bugfix: error on init doesn\'t bust iterator', () => {
       const errorIter = z.iterator(Promise.reject('error'));
