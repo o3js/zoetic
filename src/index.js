@@ -38,6 +38,18 @@ const collected = (seq) => {
     });
 };
 
+const merge = (...strs) => {
+  return emitter((next, error, complete) => {
+    const completed = _.map(strs, () => false);
+    _.each(strs, (str, i) => {
+      each(next, error, () => {
+        completed[i] = true;
+        if (_.every(completed)) complete();
+      }, str);
+    });
+  });
+};
+
 module.exports = _.extend(
   ops,
   {
@@ -49,5 +61,6 @@ module.exports = _.extend(
     collected,
     comp: transduce.comp,
     propagate: transduce.propagate,
+    merge,
   }
 );
