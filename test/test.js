@@ -138,6 +138,14 @@ module.exports = [
         [1, 2, 3, 4]);
     }]],
 
+   ['adjoin',
+    ['basics', () => {
+      const items = z.merge(z.emitter([1, 2]), z.emitter([3, 4]));
+      return assert.eventually.deepEqual(
+        z.collected(items),
+        [1, 2, 3, 4]);
+    }]],
+
    ['iterator',
     ['bugfix: error on init doesn\'t bust iterator', () => {
       const errorIter = z.iterator(Promise.reject('error'));

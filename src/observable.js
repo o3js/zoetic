@@ -30,6 +30,10 @@ class Observable {
     const self = this;
     cb(self._currentValue);
   }
+
+  currentSync() {
+    return this._currentValue;
+  }
 }
 
 module.exports = { Observable };
