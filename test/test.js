@@ -103,5 +103,14 @@ module.exports = [
        assertCollected(o, [3]),
      ]);
    }],
+   ['observe a function\'s result', () => {
+     return assertCollected(
+       z.observe(
+         (a, b, c) => a + b + c,
+         z.observable(1, []),
+         z.observable(2, []),
+         3),
+       [6]);
+   }],
   ],
 ];

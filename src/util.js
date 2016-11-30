@@ -3,6 +3,26 @@ const Observable = require('./observable').Observable;
 const assert = require('o3-sugar').assert;
 const fp = require('lodash/fp');
 
+function isEmitter(thing) {
+  return !!(thing && fp.isFunction(thing.subscribe));
+}
+
+const assertEmitter = (thing) => {
+  assert(isEmitter(thing), 'Not a stream: ' + JSON.stringify(thing));
+};
+
+const assertEmitterArray = (things) => {
+  assert(fp.isArray(things), 'Not an array: ' + JSON.stringify(things));
+  fp.each(assertEmitter, things);
+};
+
+const assertEmitterProps = (things) => {
+  assert(
+    fp.isObject(things),
+    'Not an object: ' + JSON.stringify(things));
+  fp.each(assertEmitter, things);
+};
+
 const source = {
   fromEmitter: (em) => fp.bind(em.subscribe, em),
   fromArray: (arr) => (emit, emitError, complete) => {
@@ -23,11 +43,6 @@ const source = {
       };
     },
 };
-
-
-function isEmitter(thing) {
-  return !!(thing && fp.isFunction(thing.subscribe));
-}
 
 function makeSource(thing, ...rest) {
   if (fp.isFunction(thing)) {
@@ -59,12 +74,19 @@ function emitter(thing) {
   return str;
 }
 
+function emitterCast(thing) {
+  return (thing && thing.subscribe) ? thing : emitter([thing]);
+}
+
 function observable(initial, thing) {
   return new Observable(initial, emitter(thing));
 }
 
 module.exports = {
   isEmitter,
+  assertEmitter,
+  assertEmitterArray,
+  assertEmitterProps,
   makeSource,
   emitter,
   observable,
