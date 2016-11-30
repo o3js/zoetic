@@ -1,5 +1,3 @@
-// const s = require('./stream');
-
 class Observable {
 
   constructor(initialValue, str) {
@@ -8,17 +6,18 @@ class Observable {
 
     self._currentValue = initialValue;
     self._source = str;
+
+    // Observable is greedy so we don't miss a value change
     str.subscribe(
       (item) => { self._currentValue = item; }
     );
   }
 
-  subscribe(next, __, complete) {
+  subscribe(emit, error, complete) {
     const self = this;
-    __ = null;
     // TODO: only push changes
-    next(self._currentValue);
-    return self._source.subscribe(next, null, complete);
+    emit(self._currentValue);
+    return self._source.subscribe(emit, error, complete);
   }
 
   bind(...args) {

@@ -31,12 +31,11 @@
     "eslint-plugin-jsx-a11y": "^2.1.0",
     "eslint-plugin-react": "^6.1.1",
     "mocha": "^2.5.3",
-    "mocha-brackets": "file:../mocha-brackets"
+    "mocha-brackets": "0.0.2"
   },
   "dependencies": {
     "bluebird": "^3.4.6",
     "lodash": "^4.15.0",
-    "mocha-brackets": "*",
     "o3-sugar": "0.0.3"
   }
 }
