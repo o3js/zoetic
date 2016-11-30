@@ -28,7 +28,6 @@ function reduce(reducer, target, source) {
       xf.next(result, error, complete);
     }, target);
   } else {
-    console.log('have a thing', reducer, target, source);
     assert(false, 'Expected target to be a streamy type');
   }
   return target;
@@ -246,14 +245,11 @@ function debounce(t) {
   let myTimeout;
   return (xf) => ({
     next: (result, error, complete) => {
-      let flushed;
       let completed;
       each((item) => {
-        flushed = false;
         if (myTimeout) clearTimeout(myTimeout);
         myTimeout = setTimeout(() => {
           result(item);
-          flushed = true;
           if (completed) complete();
         }, t);
       }, xf);

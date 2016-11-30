@@ -4,7 +4,7 @@ Promise.config({
   longStackTraces: true,
 });
 
-const z = require('../src/index');
+const z = require('../src/iterator/index');
 const assert = require('chai').assert;
 const fp = require('lodash/fp');
 
