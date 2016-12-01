@@ -54,6 +54,22 @@ function latest(count) {
   };
 }
 
+function changes() {
+  return (source) => {
+    const last = [];
+    return (emit, error, complete) => {
+      return source(
+        (item, unsub) => {
+          if (last.length && fp.equals(last[0], item)) return;
+          last[0] = item;
+          emit(item, unsub);
+        },
+        error,
+        complete);
+    };
+  };
+}
+
 function debounce(ms) {
   return (source) => {
     let myTimeout;
@@ -77,6 +93,22 @@ function debounce(ms) {
         });
     };
   };
+}
+
+function tap(fn) {
+  return (source) => (emit, error, complete) => {
+    return source(
+      (item, unsub) => {
+        fn(item); emit(item, unsub);
+      },
+      error, complete);
+  };
+}
+
+function log(label) {
+  label |= '';
+  // eslint-disable-next-line no-console
+  return tap((item) => { console.log(label, item); });
 }
 
 // Unsubscribe should halt emitting. this adds quite a bit of noise to the
@@ -132,4 +164,7 @@ module.exports = {
   latest,
   resolve,
   debounce,
+  changes,
+  tap,
+  log,
 };

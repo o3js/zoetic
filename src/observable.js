@@ -1,14 +1,17 @@
+const fp = require('lodash/fp');
+
 class Observable {
 
-  constructor(initialValue, str) {
+  constructor(initialValue, em) {
     const self = this;
-    // s.assertStream(str);
+    // s.assertStream(em);
 
     self._currentValue = initialValue;
-    self._source = str;
+    self._lastEmitted = initialValue;
+    self._source = em;
 
     // Observable is greedy so we don't miss a value change
-    str.subscribe(
+    em.subscribe(
       (item) => { self._currentValue = item; }
     );
   }
@@ -17,7 +20,13 @@ class Observable {
     const self = this;
     // TODO: only push changes
     emit(self._currentValue);
-    return self._source.subscribe(emit, error, complete);
+    return self._source.subscribe(
+      (item, unsub) => {
+        if (fp.equals(self._lastEmitted, item)) return;
+        self._lastEmitted = item;
+        emit(item, unsub);
+      },
+      error, complete);
   }
 
   bind(...args) {
@@ -25,9 +34,9 @@ class Observable {
     self._source.bind(...args);
   }
 
-  current(cb) {
+  current() {
     const self = this;
-    cb(self._currentValue);
+    return self._currentValue;
   }
 
   currentSync() {

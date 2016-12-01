@@ -124,8 +124,8 @@ module.exports = [
        z.observe(
          (a, b, c) => a + b + c,
          z.observable(1, []),
-         z.observable(2, []),
-         3),
+         2,
+         z.observable(3, [])),
        [6]);
    }],
   ],
