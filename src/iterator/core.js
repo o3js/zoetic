@@ -1,9 +1,9 @@
 const _ = require('lodash');
 const fp = require('lodash/fp');
 const assert = require('o3-sugar').assert;
-const Emitter = require('./emitter').Emitter;
+const Emitter = require('../emitter').Emitter;
 const Iterator = require('./iterator').Iterator;
-const Observable = require('./observable').Observable;
+const Observable = require('../observable').Observable;
 const Promise = require('bluebird');
 
 //
