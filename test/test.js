@@ -31,6 +31,15 @@ module.exports = [
         [1, 2, 3]);
     }],
    ],
+   ['binding',
+    ['late', () => {
+      const em = z.emitter();
+      const test = assert.eventually.deepEqual(
+        z.collect(z.emitter([1, 2, 3])), [1, 2, 3]);
+      z.bind(em, [1, 2, 3]);
+      return test;
+    }],
+   ],
    ['transforms',
     ['map', () => {
       return assertCollected(
@@ -72,6 +81,13 @@ module.exports = [
               Promise.delay(120).then(() => 5),
             ]))),
         [2, 5]);
+    }],
+   ],
+   ['combining',
+    ['merge', () => {
+      return assertCollected(
+        z.merge(z.emitter([1, 2]), z.emitter([3, 4])),
+        [1, 2, 3, 4]);
     }],
    ],
    ['flow',

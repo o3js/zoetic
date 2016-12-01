@@ -4,7 +4,7 @@ const assert = require('assert');
 const fp = require('lodash/fp');
 const _s = require('o3-sugar');
 const Promise = require('bluebird');
-const { adjoin } = require('./combinations');
+const combine = require('./combinations');
 
 function transformToTransformer(xf) {
   const arity = _s.parseParams(xf).length;
@@ -32,8 +32,8 @@ function collect(em) {
   });
 }
 
-function each(emit, error, complete, em) {
-  return em.subscribe(emit, error, complete);
+function each(emit_, error, complete, em) {
+  return em.subscribe(emit_, error, complete);
 }
 
 function flow(...args) {
@@ -52,7 +52,7 @@ function emitterCast(thing) {
 
 const { map } = transformers;
 function emit(fn, ...args) {
-  return map(fp.spread(fn), adjoin([], fp.map(emitterCast, args)));
+  return map(fp.spread(fn), combine.adjoin([], fp.map(emitterCast, args)));
 }
 
 function observe(fn, ...args) {
@@ -63,11 +63,13 @@ function observe(fn, ...args) {
 module.exports = fp.extendAll([
   transformers,
   {
+    merge: combine.merge,
     collect,
     each,
     flow,
     emitter: util.emitter,
     observable: util.observable,
+    bind: util.bind,
     observe,
     emit,
   },

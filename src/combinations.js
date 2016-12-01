@@ -46,4 +46,18 @@ function adjoin(defaults, ems) {
   return adjoinEmitters(defaults, ems);
 }
 
-module.exports = { adjoin, adjoinProps };
+function merge(...ems) {
+  return util.emitter((emit, error, complete) => {
+    const completed = fp.map(() => false, ems);
+    let i = -1;
+    fp.each((em) => {
+      i += 1;
+      em.subscribe(emit, error, () => {
+        completed[i] = true;
+        if (fp.every(fp.identity, completed)) complete();
+      }, em);
+    }, ems);
+  });
+}
+
+module.exports = { adjoin, adjoinProps, merge };

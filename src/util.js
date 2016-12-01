@@ -74,12 +74,33 @@ function emitter(thing) {
   return str;
 }
 
-function emitterCast(thing) {
-  return (thing && thing.subscribe) ? thing : emitter([thing]);
-}
-
 function observable(initial, thing) {
   return new Observable(initial, emitter(thing));
+}
+
+function boundCallback(str, mapper) {
+  assert(!mapper || fp.isFunction(mapper),
+         'expected a function: ' + JSON.stringify(mapper));
+  let e;
+  str.bind((emit_) => {
+    e = emit_;
+  }, true);
+  return (item) => {
+    if (e) {
+      e(
+        fp.isFunction(mapper)
+          ? mapper(item)
+          : (fp.isUndefined(mapper)
+             ? item
+             : mapper));
+    }
+  };
+}
+
+function bind(em, thing) {
+  return thing
+    ? em.bind(makeSource(thing), true)
+    : boundCallback(em);
 }
 
 module.exports = {
@@ -90,4 +111,5 @@ module.exports = {
   makeSource,
   emitter,
   observable,
+  bind,
 };
