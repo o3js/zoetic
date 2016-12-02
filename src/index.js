@@ -53,16 +53,18 @@ function observableCast(thing) {
 }
 
 const { map, changes } = transformers;
-function observe(fn, ...args) {
-  const obsList = fp.map(observableCast, args);
-  return util.observable(
-    null,
-    map(
-      fp.spread(fn),
-      changes(
-        combine.adjoin(
-          fp.map((obs) => obs.current(), obsList),
-          obsList))));
+function observer(fn) {
+  return (...args) => {
+    const obsList = fp.map(observableCast, args);
+    return util.observable(
+      null,
+      map(
+        fp.spread(fn),
+        changes(
+          combine.adjoin(
+            fp.map((obs) => obs.current(), obsList),
+            obsList))));
+  };
 }
 
 module.exports = fp.extendAll([
@@ -75,6 +77,7 @@ module.exports = fp.extendAll([
     emitter: util.emitter,
     observable: util.observable,
     bind: util.bind,
-    observe,
+    callbackFor: util.callbackFor,
+    observer,
   },
 ]);

@@ -78,16 +78,16 @@ function observable(initial, thing) {
   return new Observable(initial, emitter(thing));
 }
 
-function boundCallback(str, mapper) {
+function callbackFor(em, mapper) {
   assert(!mapper || fp.isFunction(mapper),
          'expected a function: ' + JSON.stringify(mapper));
-  let e;
-  str.bind((emit_) => {
-    e = emit_;
+  let emitCb;
+  em.bind((emit_) => {
+    emitCb = emit_;
   }, true);
   return (item) => {
-    if (e) {
-      e(
+    if (emitCb) {
+      emitCb(
         fp.isFunction(mapper)
           ? mapper(item)
           : (fp.isUndefined(mapper)
@@ -98,9 +98,15 @@ function boundCallback(str, mapper) {
 }
 
 function bind(em, thing) {
-  return thing
-    ? em.bind(makeSource(thing), true)
-    : boundCallback(em);
+  if (!thing) {
+    // DEPRECATED
+    // eslint-disable-next-line no-console
+    console.error(
+      'bind() w/o second argument is deprecated. Use callbackFor().');
+    callbackFor(em);
+  }
+
+  return em.bind(makeSource(thing), true);
 }
 
 module.exports = {
@@ -112,4 +118,5 @@ module.exports = {
   emitter,
   observable,
   bind,
+  callbackFor,
 };

@@ -7,7 +7,6 @@ function configure(opts) {
   __debug = opts.debug || __debug;
 }
 
-
 function doEmit(subs, item) {
   _.each(_.filter(subs), (sub) => { sub.emit(item, sub.unsub); });
 }
@@ -21,31 +20,33 @@ function doComplete(subs) {
   while (subs.length) { subs.pop(); }
 }
 
-function startConsuming(stream, subscribers, lazyFn) {
+function startConsuming(emitter, subscribers, lazyFn) {
   lazyFn(
     (item) => {
-      assert(!stream._completeCalled,
-             'Tried to emit on stream after calling complete');
+      assert(!emitter._completeCalled,
+             'Tried to emit after calling complete');
       doEmit(subscribers, item);
     },
     (err) => {
-      assert(!stream._completeCalled,
-             'Tried to emit error on stream after calling complete');
+      assert(!emitter._completeCalled,
+             'Tried to emit an error on emitter after calling complete');
       doError(subscribers, err);
     },
     () => {
-      assert(!stream._completeCalled,
-             'Tried to call complete on stream more than once');
-      stream._completeCalled = true;
+      assert(!emitter._completeCalled,
+             'Tried to call complete on emitter more than once');
+      emitter._completeCalled = true;
       doComplete(subscribers);
     }
   );
 }
 
-function tryConsuming(stream) {
-  if (!stream._isConsuming && stream._subscribers.length > 0 && stream._lfn) {
-    stream._isConsuming = true;
-    startConsuming(stream, stream._subscribers, stream._lfn);
+function tryConsuming(emitter) {
+  if (!emitter._isConsuming
+      && emitter._subscribers.length > 0
+      && emitter._sourceFn) {
+    emitter._isConsuming = true;
+    startConsuming(emitter, emitter._subscribers, emitter._sourceFn);
   }
 }
 
@@ -75,24 +76,18 @@ function addSubscriber(subs, em, er, c) {
 }
 
 class Emitter {
-  constructor(lazyFn) {
+  constructor(sourceFn) {
     const self = this;
     self._captureStack = __debug ? new Error('Stream created at') : null;
     self._subscribers = [];
     self._isConsuming = false;
-    self._lfn = lazyFn;
+    self._sourceFn = sourceFn;
     self._completeCalled = false;
     return self;
   }
 
   subscribe(emit, emitError, complete) {
     const self = this;
-    if (self._isConsuming) {
-      if (__debug) {
-        // eslint-disable-next-line no-console
-        console.error('Stream already active: ', self._captureStack);
-      }
-    }
     if (self._completeCalled && complete) {
       complete();
     }
@@ -101,11 +96,15 @@ class Emitter {
     tryConsuming(self);
   }
 
-  bind(lfn) {
+  bind(sourceFn) {
     const self = this;
-    assert(_.isFunction(lfn), 'Expected a function: ' + JSON.stringify(lfn));
-    assert(_.isUndefined(self._lfn), 'Emitter is already bound');
-    self._lfn = lfn;
+    assert(
+      _.isFunction(sourceFn),
+      'Expected a function: ' + JSON.stringify(sourceFn));
+    assert(
+      _.isUndefined(self._sourceFn),
+      'Emitter is already bound');
+    self._sourceFn = sourceFn;
     tryConsuming(self);
     return self;
   }
