@@ -13,6 +13,13 @@ function assertCollected(emitter, expected) {
 
 module.exports = [
   ['Emitter',
+   ['multiple subscribers get same thing', () => {
+     const em = z.emitter([1, 2, 3]);
+     return Promise.all([
+       assertCollected(em, [1, 2, 3]),
+       assertCollected(em, [1, 2, 3]),
+     ]);
+   }],
    ['drivers',
     ['collect', () => {
       return assert.eventually.deepEqual(

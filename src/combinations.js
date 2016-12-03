@@ -2,17 +2,31 @@ const fp = require('lodash/fp');
 const util = require('./util');
 const assert = require('o3-sugar').assert;
 
+function unsubAll(unsubs) {
+  fp.each(unsub => unsub(), unsubs);
+}
+
+function unsubAllValues(unsubs) {
+  fp.each(unsub => unsub(), unsubs);
+}
+
 function adjoinEmitters(tuple, ems) {
   const completed = fp.mapValues(() => false, ems);
-  return util.emitter((next, error, complete) => {
+  return util.emitter((emit, error, complete) => {
+    const unsubs = {};
+    const _unsubAll = fp.partial(unsubAllValues, [unsubs]);
     fp.each((key) => {
       ems[key].subscribe(
-        (item) => {
+        (item, unsub) => {
+          unsubs[key] = unsub;
           tuple = fp.clone(tuple);
           tuple[key] = item;
-          next(tuple);
+          emit(tuple, _unsubAll);
         },
-        error,
+        (err, unsub) => {
+          unsubs[key] = unsub;
+          error(err, _unsubAll);
+        },
         () => {
           completed[key] = true;
           if (fp.every(fp.identity, completed)) {
@@ -49,14 +63,23 @@ function adjoin(defaults, ems) {
 function merge(...ems) {
   return util.emitter((emit, error, complete) => {
     const completed = fp.map(() => false, ems);
-    let i = -1;
-    fp.each((em) => {
-      i += 1;
-      em.subscribe(emit, error, () => {
-        completed[i] = true;
-        if (fp.every(fp.identity, completed)) complete();
-      }, em);
-    }, ems);
+    const unsubs = [];
+    const _unsubAll = fp.partial(unsubAll, [unsubs]);
+    fp.times(i => {
+      ems[i].subscribe(
+        (item, unsub) => {
+          unsubs[i] = unsub;
+          emit(item, _unsubAll);
+        },
+        (err, unsub) => {
+          unsubs[i] = unsub;
+          error(err, _unsubAll);
+        },
+        () => {
+          completed[i] = true;
+          if (fp.every(fp.identity, completed)) complete();
+        });
+    }, ems.length);
   });
 }
 

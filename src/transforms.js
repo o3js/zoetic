@@ -3,7 +3,7 @@ const Promise = require('bluebird');
 
 function map(fn) {
   return (source) => (emit, error, complete) => {
-    return source(
+    source(
       // wasteful array boxing, but the idea is to use the lodash
       // implementation
       (item, unsub) => { emit(fn(item), unsub); },
@@ -25,14 +25,14 @@ function filter(predicate) {
 
 function take(count) {
   return (source) => {
-    let remaining = count;
     return (emit, error, complete) => {
+      let remaining = count;
       if (remaining === 0) {
         complete();
         // never subscribed
         return fp.noop;
       }
-      return source(
+      source(
         (val, unsub) => {
           remaining--;
           emit(val, unsub);
@@ -51,9 +51,9 @@ function take(count) {
 
 function latest(count) {
   return (source) => {
-    const buffered = [];
     return (emit, error, complete) => {
-      return source(
+      const buffered = [];
+      source(
         (item, unsub) => {
           buffered.push(item);
           if (buffered.length > count) buffered.shift();
@@ -67,9 +67,9 @@ function latest(count) {
 
 function changes() {
   return (source) => {
-    const last = [];
     return (emit, error, complete) => {
-      return source(
+      const last = [];
+      source(
         (item, unsub) => {
           if (last.length && fp.equals(last[0], item)) return;
           last[0] = item;
@@ -83,11 +83,11 @@ function changes() {
 
 function debounce(ms) {
   return (source) => {
-    let myTimeout;
-    let flushed;
-    let completed;
     return (next, error, complete) => {
-      return source(
+      let myTimeout;
+      let flushed;
+      let completed;
+      source(
         (item, unsub) => {
           flushed = false;
           if (myTimeout) clearTimeout(myTimeout);
@@ -108,7 +108,7 @@ function debounce(ms) {
 
 function tap(fn) {
   return (source) => (emit, error, complete) => {
-    return source(
+    source(
       (item, unsub) => {
         fn(item); emit(item, unsub);
       },
@@ -126,15 +126,14 @@ function log(label) {
 // implementation -- perhaps there is a better way or it is not worth it.
 function resolve() {
   return (source) => {
-    let pending = Promise.resolve();
     return (emit, error, complete) => {
-      const unsubscribe = source(
-
+      let pending = Promise.resolve();
+      source(
         (val, unsub) => {
-          const wrappedUnsub = () => {
+          function wrappedUnsub() {
             emit = error = complete = fp.noop;
             unsub();
-          };
+          }
           pending = pending.then(
             () => {
               return Promise.resolve(val)
@@ -145,7 +144,7 @@ function resolve() {
         },
 
         (err, unsub) => {
-          const wrappedUnsub = () => {
+          function wrappedUnsub() {
             emit = error = complete = fp.noop;
             unsub();
           };
@@ -160,10 +159,6 @@ function resolve() {
           pending.then(complete);
         }
       );
-      return () => {
-        emit = error = complete = fp.noop;
-        unsubscribe();
-      };
     };
   };
 }

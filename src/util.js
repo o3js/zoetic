@@ -27,20 +27,22 @@ const source = {
   fromEmitter: (em) => fp.bind(em.subscribe, em),
   fromArray: (arr) => (emit, emitError, complete) => {
     emitError = null;
-    fp.each((item) => { emit(item); }, arr);
+    fp.each((item) => { emit(item, fp.noop); }, arr);
     complete();
-    return fp.noop;
   },
   fromPromise: (p) => (emit, emitError, complete) => {
-    p.then(emit, emitError).then(complete);
-    return fp.noop;
+    p.then(
+      (item) => emit(item, fp.noop),
+      (err) => emitError(err, fp.noop)
+    ).then(complete);
   },
   fromEventEmitter: (eventEmitter, eventName) =>
     (emit) => {
-      eventEmitter.on(eventName, emit);
-      return () => {
-        eventEmitter.off(emit);
-      };
+      eventEmitter.addListener(
+        eventName,
+        function emitEvent(evt) {
+          emit(evt, () => { eventEmitter.removeListener(emitEvent); });
+        });
     },
 };
 
@@ -70,7 +72,7 @@ function makeSource(thing, ...rest) {
 function emitter(thing) {
   const str = fp.isUndefined(thing)
           ? new Emitter()
-          : new Emitter(makeSource(thing));
+          : { subscribe: makeSource(thing) };
   return str;
 }
 

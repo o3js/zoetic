@@ -1,4 +1,4 @@
-// const fp = require('lodash/fp');
+const fp = require('lodash/fp');
 
 class Observable {
 
@@ -12,7 +12,9 @@ class Observable {
 
     // Observable is greedy so we don't miss a value change
     em.subscribe(
-      (item) => { self._currentValue = item; }
+      (item) => { self._currentValue = item; },
+      fp.noop,
+      fp.noop
     );
   }
 
