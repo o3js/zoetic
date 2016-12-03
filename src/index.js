@@ -33,6 +33,9 @@ function collect(em) {
 }
 
 function each(emit_, error, complete, em) {
+  if (arguments.length === 2) {
+    return arguments[1].subscribe(emit_, fp.noop, fp.noop);
+  }
   return em.subscribe(emit_, error, complete);
 }
 
