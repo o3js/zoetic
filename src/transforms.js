@@ -12,6 +12,17 @@ function map(fn) {
   };
 }
 
+function filter(predicate) {
+  return (source) => (emit, error, complete) => {
+    return source(
+      (item) => {
+        if (fp.filter(predicate, [item]).length > 0) emit(item);
+      },
+      error,
+      complete);
+  };
+}
+
 function take(count) {
   return (source) => {
     let remaining = count;
@@ -160,6 +171,7 @@ function resolve() {
 
 module.exports = {
   map,
+  filter,
   take,
   latest,
   resolve,

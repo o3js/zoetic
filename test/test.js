@@ -46,6 +46,13 @@ module.exports = [
         z.map((i) => i * 2, z.emitter([1, 2, 3])),
         [2, 4, 6]);
     }],
+    ['filter', () => {
+      return assertCollected(
+        z.filter((i) => {
+          return i % 2 === 0;
+        }, z.emitter([1, 2, 3, 4])),
+        [2, 4]);
+    }],
     ['take', () => {
       return assertCollected(
         z.take(2, z.emitter([1, 2])),
