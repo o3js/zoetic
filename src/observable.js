@@ -1,4 +1,4 @@
-const fp = require('lodash/fp');
+// const fp = require('lodash/fp');
 
 class Observable {
 
@@ -22,7 +22,7 @@ class Observable {
     emit(self._currentValue);
     return self._source.subscribe(
       (item, unsub) => {
-        if (fp.equals(self._lastEmitted, item)) return;
+        // if (fp.equals(self._lastEmitted, item)) return;
         self._lastEmitted = item;
         emit(item, unsub);
       },
