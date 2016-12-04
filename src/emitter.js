@@ -41,15 +41,6 @@ function startConsuming(emitter, subscribers, lazyFn) {
   );
 }
 
-function tryConsuming(emitter) {
-  if (!emitter._isConsuming
-      && emitter._subscribers.length > 0
-      && emitter._sourceFn) {
-    emitter._isConsuming = true;
-    startConsuming(emitter, emitter._subscribers, emitter._sourceFn);
-  }
-}
-
 function subscriber(em, er, c, unsub) {
   return {
     emit: em,
@@ -80,9 +71,9 @@ class Emitter {
     const self = this;
     self._captureStack = __debug ? new Error('Stream created at') : null;
     self._subscribers = [];
-    self._isConsuming = false;
     self._sourceFn = sourceFn;
     self._completeCalled = false;
+    if (sourceFn) startConsuming(self, self._subscribers, self._sourceFn);
     return self;
   }
 
@@ -91,9 +82,7 @@ class Emitter {
     if (self._completeCalled && complete) {
       complete();
     }
-
     addSubscriber(self._subscribers, emit, emitError, complete);
-    tryConsuming(self);
   }
 
   bind(sourceFn) {
@@ -105,7 +94,7 @@ class Emitter {
       _.isUndefined(self._sourceFn),
       'Emitter is already bound');
     self._sourceFn = sourceFn;
-    tryConsuming(self);
+    startConsuming(self, self._subscribers, self._sourceFn);
     return self;
   }
 }

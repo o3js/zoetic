@@ -14,27 +14,22 @@ class Observable {
 
     let emitted = false;
 
-    let out = { emit: fp.noop, error: fp.noop, complete: fp.noop };
     // Observable is greedy so we don't miss a value change
     self._ee = new Emitter((emit, error, complete) => {
-      out = { emit, error, complete };
+      em.subscribe(
+        (item) => {
+          if (emitted && fp.equals(self._currentValue, item)) return;
+          emitted = true;
+          self._currentValue = item;
+          emit(item);
+        },
+        error,
+        () => {
+          self._completed = true;
+          complete();
+        }
+      );
     });
-
-    self._ee.subscribe();
-
-    em.subscribe(
-      (item) => {
-        if (emitted && fp.equals(self._currentValue, item)) return;
-        emitted = true;
-        self._currentValue = item;
-        out.emit(item);
-      },
-      out.error,
-      () => {
-        self._completed = true;
-        out.complete();
-      }
-    );
   }
 
   subscribe(emit = fp.noop, error = fp.noop, complete = fp.noop) {
