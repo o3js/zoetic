@@ -104,8 +104,9 @@ function bind(em, thing) {
     // DEPRECATED
     // eslint-disable-next-line no-console
     console.error(
-      'bind() w/o second argument is deprecated. Use callbackFor().');
-    callbackFor(em);
+      'bind() w/o second argument is deprecated. Use callbackFor().',
+      new Error());
+    return callbackFor(em);
   }
 
   return em.bind(makeSource(thing), true);

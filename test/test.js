@@ -141,5 +141,15 @@ module.exports = [
          z.observable(3, [])),
        [6]);
    }],
+   ['multiple observers', () => {
+     const em = z.emitter();
+     const emCB = z.callbackFor(em);
+     const obs = z.observable(1, em);
+     setTimeout(() => {
+       emCB(4);
+     }, 100);
+     assertCollected(obs, [1, 4]);
+     assertCollected(obs, [1, 4]);
+   }],
   ],
 ];

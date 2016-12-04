@@ -86,7 +86,7 @@ class Emitter {
     return self;
   }
 
-  subscribe(emit, emitError, complete) {
+  subscribe(emit = _.noop, emitError = _.noop, complete = _.noop) {
     const self = this;
     if (self._completeCalled && complete) {
       complete();

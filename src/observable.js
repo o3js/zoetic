@@ -1,4 +1,5 @@
 const fp = require('lodash/fp');
+const Emitter = require('./emitter').Emitter;
 
 class Observable {
 
@@ -6,39 +7,47 @@ class Observable {
     const self = this;
     // s.assertStream(em);
 
+    self._listeners = [];
     self._currentValue = initialValue;
-    self._lastEmitted = initialValue;
     self._source = em;
+    self._completed = false;
 
+    let emitted = false;
+
+    let out = { emit: fp.noop, error: fp.noop, complete: fp.noop };
     // Observable is greedy so we don't miss a value change
+    self._ee = new Emitter((emit, error, complete) => {
+      out = { emit, error, complete };
+    });
+
+    self._ee.subscribe();
+
     em.subscribe(
-      (item) => { self._currentValue = item; },
-      fp.noop,
-      fp.noop
+      (item) => {
+        if (emitted && fp.equals(self._currentValue, item)) return;
+        emitted = true;
+        self._currentValue = item;
+        out.emit(item);
+      },
+      out.error,
+      () => {
+        self._completed = true;
+        out.complete();
+      }
     );
   }
 
-  subscribe(emit, error, complete) {
-    const self = this;
-    // TODO: only push changes
-    emit(self._currentValue);
-    return self._source.subscribe(
-      (item, unsub) => {
-        // if (fp.equals(self._lastEmitted, item)) return;
-        self._lastEmitted = item;
-        emit(item, unsub);
-      },
-      error, complete);
-  }
-
-  bind(...args) {
-    const self = this;
-    self._source.bind(...args);
+  subscribe(emit = fp.noop, error = fp.noop, complete = fp.noop) {
+    emit(this._currentValue);
+    if (this._completed) {
+      complete();
+      return;
+    }
+    this._ee.subscribe(emit, error, complete);
   }
 
   current() {
-    const self = this;
-    return self._currentValue;
+    return this._currentValue;
   }
 
   currentSync() {
