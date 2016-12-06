@@ -13,13 +13,31 @@ function assertCollected(emitter, expected) {
 
 module.exports = [
   ['Emitter',
-   ['multiple subscribers get same thing', () => {
-     const em = z.emitter([1, 2, 3]);
-     return Promise.all([
-       assertCollected(em, [1, 2, 3]),
-       assertCollected(em, [1, 2, 3]),
-     ]);
-   }],
+   ['multiple subscribers get same thing',
+    ['array', () => {
+      const em = z.emitter([1, 2, 3]);
+      return Promise.all([
+        assertCollected(em, [1, 2, 3]),
+        assertCollected(em, [1, 2, 3]),
+      ]);
+    }],
+    ['promise', () => {
+      const em = z.emitter(Promise.resolve(1));
+      return Promise.all([
+        assertCollected(em, [1]),
+        Promise.delay(10).then(() => {
+          return assertCollected(em, [1]);
+        }),
+      ]);
+    }],
+    ['take', () => {
+      const em = z.take(1, z.emitter([1, 2, 3]));
+      return Promise.all([
+        assertCollected(em, [1]),
+        assertCollected(em, [1]),
+      ]);
+    }],
+   ],
    ['drivers',
     ['collect', () => {
       return assert.eventually.deepEqual(

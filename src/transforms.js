@@ -29,14 +29,13 @@ function take(count) {
       let remaining = count;
       if (remaining === 0) {
         complete();
-        // never subscribed
-        return fp.noop;
       }
       source(
         (val, unsub) => {
+          if (!remaining) return;
           remaining--;
           emit(val, unsub);
-          if (!remaining) {
+          if (remaining === 0) {
             complete();
             complete = fp.noop;
             unsub();
@@ -147,7 +146,7 @@ function resolve() {
           function wrappedUnsub() {
             emit = error = complete = fp.noop;
             unsub();
-          };
+          }
           pending = pending.then(
             () => {
               error(err, wrappedUnsub);

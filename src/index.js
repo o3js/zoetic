@@ -81,6 +81,7 @@ module.exports = fp.extendAll([
     observable: util.observable,
     bind: util.bind,
     callbackFor: util.callbackFor,
+    listen: util.listen,
     observer,
   },
 ]);
