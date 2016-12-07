@@ -56,7 +56,7 @@ module.exports = fp.extendAll([
     bind: util.bind,
     callbackFor: util.callbackFor,
     emitify,
-    observel: dom.observel,
+    bindel: dom.bindel,
     listen: dom.listen,
   },
 ]);

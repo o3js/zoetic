@@ -18,17 +18,18 @@ function listen(eventName, em = emitter()) {
   };
 }
 
-function observel(field, eventName, em) {
-  return (el, release) => {
+function bindel(field, eventName, em) {
+  return (el, onRemoved = fp.noop) => {
+    onRemoved(() => { el = null; });
     bind(
       observe(
-        () => el[field],
-        listen(eventName)(el, release)),
+        () => (el ? el[field] : null),
+        listen(eventName)(el, onRemoved)),
       em);
   };
 }
 
 module.exports = {
-  observel,
+  bindel,
   listen,
 };
