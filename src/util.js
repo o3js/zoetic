@@ -1,4 +1,3 @@
-const Observable = require('./observable').Observable;
 const assert = require('o3-sugar').assert;
 const fp = require('lodash/fp');
 
@@ -98,10 +97,6 @@ function emitter(thing) {
   return str;
 }
 
-function observable(initial, thing) {
-  return new Observable(initial, emitter(thing));
-}
-
 function callbackFor(em, mapper) {
   assert(!mapper || fp.isFunction(mapper),
          'expected a function: ' + JSON.stringify(mapper));
@@ -121,11 +116,11 @@ function callbackFor(em, mapper) {
   };
 }
 
-function bind(em, thing) {
+function bind(thing, em) {
   return em.bind(makeSource(thing), true);
 }
 
-function listen(eventName, em) {
+function listen(eventName, em = emitter()) {
   return (el, onRelease = fp.noop) => {
     em.bind((emit, error, complete) => {
       error = null;
@@ -137,6 +132,7 @@ function listen(eventName, em) {
         emit(evt, () => em.removeListener(eventName, listener));
       });
     });
+    return em;
   };
 }
 
@@ -147,7 +143,6 @@ module.exports = {
   assertEmitterProps,
   makeSource,
   emitter,
-  observable,
   bind,
   callbackFor,
   listen,

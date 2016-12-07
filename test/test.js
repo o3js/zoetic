@@ -61,7 +61,7 @@ module.exports = [
       const em = z.emitter();
       const test = assert.eventually.deepEqual(
         z.collect(z.emitter([1, 2, 3])), [1, 2, 3]);
-      z.bind(em, [1, 2, 3]);
+      z.bind([1, 2, 3], em);
       return test;
     }],
    ],
@@ -144,25 +144,27 @@ module.exports = [
   ],
   ['Observable',
    ['retains value', () => {
-     const o = z.observable(1, z.emitter([2, 3]));
+     const data = [1, 2, 3];
+     const fn = (val) => val || data[0];
+     const o = z.observe(fn, z.emitter(data));
      return Promise.all([
-       assertCollected(z.observable(1, z.emitter([2, 3])), [3]),
-       assertCollected(o, [3]),
-       assertCollected(o, [3]),
+       assertCollected(z.observe(fn, z.emitter(data)), [1, 2, 3]),
+       assertCollected(o, [1, 2, 3]),
+       assertCollected(o, [1, 2, 3]),
      ]);
    }],
    ['observe a function\'s result', () => {
      return assertCollected(
-       z.observer((a, b, c) => a + b + c)(
-         z.observable(1, []),
+       z.emitify((a, b, c) => a + b + c)(
+         z.emitter([1]),
          2,
-         z.observable(3, [])),
+         z.emitter([3])),
        [6]);
    }],
    ['multiple observers', () => {
      const em = z.emitter();
      const emCB = z.callbackFor(em);
-     const obs = z.observable(1, em);
+     const obs = z.observe((val) => val || 1, em);
      setTimeout(() => {
        emCB(4);
      }, 100);

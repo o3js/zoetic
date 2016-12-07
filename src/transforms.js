@@ -64,6 +64,15 @@ function latest(count) {
   };
 }
 
+function startWith(value) {
+  return (source) => {
+    return (emit, error, complete) => {
+      emit(value);
+      source(emit, error, complete);
+    };
+  };
+}
+
 function changes() {
   return (source) => {
     return (emit, error, complete) => {
@@ -79,6 +88,19 @@ function changes() {
     };
   };
 }
+
+function observe(fn) {
+  return (source) => {
+    return (emit, error, complete) => {
+      fp.flowRight(
+        changes(),
+        startWith(fn()),
+        map(fn)
+      )(source)(emit, error, complete);
+    };
+  };
+}
+
 
 function debounce(ms) {
   return (source) => {
@@ -173,4 +195,6 @@ module.exports = {
   changes,
   tap,
   log,
+  startWith,
+  observe
 };

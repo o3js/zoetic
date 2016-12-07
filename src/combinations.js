@@ -10,18 +10,20 @@ function unsubAllValues(unsubs) {
   fp.each(unsub => unsub(), unsubs);
 }
 
-function adjoinEmitters(tuple, ems) {
+function adjoinEmitters(ems) {
   const completed = fp.mapValues(() => false, ems);
   return util.emitter((emit, error, complete) => {
+    let tuple = fp.isArray(ems) ? [] : {};
     const unsubs = {};
     const _unsubAll = fp.partial(unsubAllValues, [unsubs]);
+    let allSubscribed = false;
     fp.each((key) => {
       ems[key].subscribe(
         (item, unsub) => {
           unsubs[key] = unsub;
           tuple = fp.clone(tuple);
           tuple[key] = item;
-          emit(tuple, _unsubAll);
+          if (allSubscribed) emit(tuple, _unsubAll);
         },
         (err, unsub) => {
           unsubs[key] = unsub;
@@ -34,6 +36,10 @@ function adjoinEmitters(tuple, ems) {
           }
         });
     }, fp.keys(ems));
+    allSubscribed = true;
+    // The first emit happens after each adjoined emitter has had a chance
+    // to fire synchronously
+    emit(tuple, _unsubAll);
   });
 }
 
@@ -51,13 +57,9 @@ function adjoinEmitters(tuple, ems) {
 //   return adjoinEmitters(defaults, ems);
 // }
 
-function adjoin(defaults, ems) {
-  defaults = defaults || fp.map(fp.noop, ems);
+function adjoin(ems) {
   util.assertEmitterArray(ems);
-
-  if (defaults) assert(fp.isArray(defaults),
-                       'adjoin takes an array of defaults');
-  return adjoinEmitters(defaults, ems);
+  return adjoinEmitters(ems);
 }
 
 function merge(...ems) {

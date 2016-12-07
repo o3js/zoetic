@@ -46,29 +46,33 @@ function flow(...args) {
   };
 }
 
+function castEmitter(val) {
+  if (fp.isFunction(val.subscribe)) return val;
+  return util.emitter([val]);
+}
+
 const transformers = fp.mapValues(transformToTransformer, transforms);
 
-
-function observableCast(thing) {
-  return (thing && fp.isFunction(thing.current))
-    ? thing
-    : util.observable(thing, []);
-}
-
 const { map, changes } = transformers;
-function observer(fn) {
+function emitify(fn) {
   return (...args) => {
-    const obsList = fp.map(observableCast, args);
-    return util.observable(
-      null,
-      map(
-        fp.spread(fn),
-        changes(
-          combine.adjoin(
-            fp.map((obs) => obs.current(), obsList),
-            obsList))));
+    return map(
+      fp.spread(fn),
+      changes(
+        combine.adjoin(fp.map(castEmitter, args))));
   };
 }
+
+function observel(field, eventName, em) {
+  return (el, release) => {
+    util.bind(
+      transformers.observe(
+        () => el[field],
+        util.listen(eventName)(el, release)),
+      em);
+  };
+}
+
 
 module.exports = fp.extendAll([
   transformers,
@@ -78,10 +82,10 @@ module.exports = fp.extendAll([
     each,
     flow,
     emitter: util.emitter,
-    observable: util.observable,
     bind: util.bind,
     callbackFor: util.callbackFor,
     listen: util.listen,
-    observer,
+    emitify,
+    observel,
   },
 ]);
