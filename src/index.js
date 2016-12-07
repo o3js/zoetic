@@ -1,26 +1,9 @@
 const transforms = require('./transforms');
 const util = require('./util');
-const assert = require('assert');
 const fp = require('lodash/fp');
-const _s = require('o3-sugar');
 const Promise = require('bluebird');
 const combine = require('./combinations');
-
-function transformToTransformer(xf) {
-  const arity = _s.parseParams(xf).length;
-  const transformer = (...args) => {
-    assert(
-      args.length >= arity,
-      'Insufficient arguments, expected at least ' + arity);
-    if (args.length === arity) {
-      return xf(...args);
-    }
-    return util.emitter(
-      xf(...args.slice(0, -1))(util.makeSource(fp.last(args)))
-    );
-  };
-  return transformer;
-}
+const dom = require('./dom');
 
 function collect(em) {
   return new Promise((resolve, reject) => {
@@ -34,6 +17,7 @@ function collect(em) {
 
 function each(emit_, error, complete, em) {
   if (arguments.length === 2) {
+    // eslint-disable-next-line prefer-rest-params
     return arguments[1].subscribe(emit_, fp.noop, fp.noop);
   }
   return em.subscribe(emit_, error, complete);
@@ -51,9 +35,7 @@ function castEmitter(val) {
   return util.emitter([val]);
 }
 
-const transformers = fp.mapValues(transformToTransformer, transforms);
-
-const { map, changes } = transformers;
+const { map, changes } = transforms;
 function emitify(fn) {
   return (...args) => {
     return map(
@@ -63,19 +45,8 @@ function emitify(fn) {
   };
 }
 
-function observel(field, eventName, em) {
-  return (el, release) => {
-    util.bind(
-      transformers.observe(
-        () => el[field],
-        util.listen(eventName)(el, release)),
-      em);
-  };
-}
-
-
 module.exports = fp.extendAll([
-  transformers,
+  transforms,
   {
     merge: combine.merge,
     collect,
@@ -84,8 +55,8 @@ module.exports = fp.extendAll([
     emitter: util.emitter,
     bind: util.bind,
     callbackFor: util.callbackFor,
-    listen: util.listen,
     emitify,
-    observel,
+    observel: dom.observel,
+    listen: dom.listen,
   },
 ]);

@@ -3,5 +3,4 @@
 require('chai').use(require('chai-as-promised'));
 const mochaBrackets = require('mocha-brackets');
 
-mochaBrackets.load({},
-                   [require('./iterator_test'), require('./test')]);
+mochaBrackets.load({}, [require('./test')]);

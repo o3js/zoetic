@@ -80,7 +80,8 @@ function unboundEmitter() {
   }
 
   function bind_(aSource) {
-    assert(!source, 'source already bound');
+    assert(fp.isFunction(aSource), 'Expected a function: ' + aSource);
+    assert(!source, 'Source already bound');
     source = aSource;
     if (pendingSubscribers) {
       fp.each((subscriber) => { source(...subscriber); }, pendingSubscribers);
@@ -120,22 +121,6 @@ function bind(thing, em) {
   return em.bind(makeSource(thing), true);
 }
 
-function listen(eventName, em = emitter()) {
-  return (el, onRelease = fp.noop) => {
-    em.bind((emit, error, complete) => {
-      error = null;
-      onRelease(() => {
-        em = null;
-        complete();
-      });
-      el.addEventListener(eventName, function listener(evt) {
-        emit(evt, () => em.removeListener(eventName, listener));
-      });
-    });
-    return em;
-  };
-}
-
 module.exports = {
   isEmitter,
   assertEmitter,
@@ -145,5 +130,4 @@ module.exports = {
   emitter,
   bind,
   callbackFor,
-  listen,
 };

@@ -1,6 +1,5 @@
 const fp = require('lodash/fp');
 const util = require('./util');
-const assert = require('o3-sugar').assert;
 
 function unsubAll(unsubs) {
   fp.each(unsub => unsub(), unsubs);

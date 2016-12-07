@@ -1,3 +1,6 @@
+const _s = require('o3-sugar');
+const assert = require('o3-sugar').assert;
+const util = require('./util');
 const fp = require('lodash/fp');
 const Promise = require('bluebird');
 
@@ -184,8 +187,23 @@ function resolve() {
   };
 }
 
+function makeTransform(xf) {
+  const arity = _s.parseParams(xf).length;
+  const transformer = (...args) => {
+    assert(
+      args.length >= arity,
+      'Insufficient arguments, expected at least ' + arity);
+    if (args.length === arity) {
+      return xf(...args);
+    }
+    return util.emitter(
+      xf(...args.slice(0, -1))(util.makeSource(fp.last(args)))
+    );
+  };
+  return transformer;
+}
 
-module.exports = {
+module.exports = fp.mapValues(makeTransform, {
   map,
   filter,
   take,
@@ -196,5 +214,5 @@ module.exports = {
   tap,
   log,
   startWith,
-  observe
-};
+  observe,
+});
