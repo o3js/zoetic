@@ -36,13 +36,11 @@ function castEmitter(val) {
 }
 
 const { map, changes } = transforms;
-function emitify(fn) {
-  return (...args) => {
-    return map(
-      fp.spread(fn),
-      changes(
-        combine.adjoin(fp.map(castEmitter, args))));
-  };
+function apply(fn, ...args) {
+  return map(
+    fp.spread(fn),
+    changes(
+      combine.adjoin(fp.map(castEmitter, args))));
 }
 
 module.exports = fp.extendAll([
@@ -52,10 +50,10 @@ module.exports = fp.extendAll([
     collect,
     each,
     flow,
+    apply,
     emitter: util.emitter,
     bind: util.bind,
     callbackFor: util.callbackFor,
-    emitify,
     bindel: dom.bindel,
     listen: dom.listen,
   },
