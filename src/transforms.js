@@ -104,18 +104,29 @@ function observe(fn) {
   };
 }
 
-function memoize() {
+function reduce(reducer, initial) {
   return (source) => {
-    let last;
-    let hasEmitted = false;
     return (emit, error, complete) => {
-      if (hasEmitted) emit(last);
+      let last = initial;
+      let unsubbed = false;
+      emit(initial, () => { unsubbed = true; });
+      if (unsubbed) return;
       source(
         (item, unsub) => {
-          last = item;
-          hasEmitted = true;
-          emit(item, unsub);
-        }, error, complete);
+          if (unsubbed) {
+            unsub();
+            return;
+          }
+          last = reducer(last, item);
+          emit(last, unsub);
+        },
+        (err, unsub) => {
+          if (unsubbed) {
+            unsub();
+            return;
+          }
+          error(err, unsub);
+        }, complete);
     };
   };
 }
@@ -230,5 +241,5 @@ module.exports = fp.mapValues(makeTransform, {
   log,
   startWith,
   observe,
-  memoize,
+  reduce,
 });

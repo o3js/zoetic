@@ -55,6 +55,7 @@ module.exports = fp.extendAll([
   transforms,
   {
     merge: combine.merge,
+    reduceAll: combine.reduceAll,
     collect,
     each,
     flow,

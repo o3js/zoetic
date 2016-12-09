@@ -114,6 +114,28 @@ module.exports = [
             ]))),
         [2, 5]);
     }],
+    ['reduce', () => {
+      return assertCollected(
+        z.reduce(
+          (last, val) => last + val,
+          0,
+          z.emitter([1, 2, 3])),
+        [0, 1, 3, 6]);
+    }],
+    ['reduceAll', () => {
+      return assertCollected(
+        z.reduceAll(
+          [
+            (last, val) => last + val,
+            (last, val) => last + val + val,
+          ],
+          0,
+          [
+            z.emitter([1, 1]),
+            z.emitter([2, 2]),
+          ]),
+        [0, 1, 2, 6, 10]);
+    }],
    ],
    ['combining',
     ['merge', () => {

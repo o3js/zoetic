@@ -1,5 +1,6 @@
 const fp = require('lodash/fp');
 const util = require('./util');
+const { reduce, map } = require('./transforms');
 
 function unsubAll(unsubs) {
   fp.each(unsub => unsub(), unsubs);
@@ -84,4 +85,18 @@ function merge(...ems) {
   });
 }
 
-module.exports = { adjoin, merge };
+function reduceAll(...args) {
+  const [reducers, initial, ems] = args.length > 2
+          ? args
+          : [args[0], undefined, args[1]];
+  return reduce(
+    (last, [idx, val]) => reducers[idx](last, val),
+    initial,
+    merge(
+      ...fp.map(
+        i => map(v => [i, v], ems[i]),
+        fp.range(0, ems.length))));
+}
+
+
+module.exports = { adjoin, merge, reduceAll };
