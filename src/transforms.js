@@ -15,6 +15,46 @@ function map(fn) {
   };
 }
 
+function cat() {
+  return (source) => (emit, error, complete) => {
+    const unsubs = [];
+    const isChildComplete = [];
+    let isParentComplete = false;
+    function unsubChildren() {
+      fp.each(u => u(), unsubs);
+    }
+    function attemptComplete() {
+      if (isParentComplete && fp.all(fp.identity, isChildComplete)) {
+        complete();
+      }
+    }
+    let i = 0;
+    source(
+      // wasteful array boxing, but the idea is to use the lodash
+      // implementation
+      (item, unsub) => {
+        const cur = i; i += 1;
+        isChildComplete[cur] = false;
+        item.subscribe(
+          (it, un) => {
+            unsubs[cur] = un;
+            emit(it, () => { unsub(); unsubChildren(); });
+          },
+          (err, un) => {
+            unsubs[cur] = un;
+            error(err, () => { unsub(); unsubChildren(); });
+          },
+          () => { isChildComplete[cur] = true; attemptComplete(); });
+      },
+      error,
+      () => { isParentComplete = true; attemptComplete(); });
+  };
+}
+
+function mapcat(fn) {
+  return fp.flow(map(fn), cat());
+}
+
 function filter(predicate) {
   return (source) => (emit, error, complete) => {
     return source(
@@ -242,4 +282,6 @@ module.exports = fp.mapValues(makeTransform, {
   startWith,
   observe,
   reduce,
+  cat,
+  mapcat,
 });

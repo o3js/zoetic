@@ -13,6 +13,30 @@ function assertCollected(emitter, expected) {
 
 module.exports = [
   ['Emitter',
+   ['apply', () => {
+     return assertCollected(
+       z.apply(
+         (a, b, c) => a + b + c,
+         z.emitter([1]),
+         2,
+         z.emitter([3])),
+       [6]);
+   }],
+   ['multiple observers all receive value', () => {
+     const em = z.emitter((emit, error, complete) => {
+       setTimeout(() => {
+         emit(4);
+         complete();
+       }, 10);
+     });
+     const obs = z.observe((val) => val || 1, em);
+     return Promise.all([
+       assertCollected(obs, [1, 4]),
+       assertCollected(obs, [1, 4]),
+     ]);
+   }],
+  ],
+
    ['multiple subscribers get same thing',
     ['array', () => {
       const em = z.emitter([1, 2, 3]);
@@ -38,6 +62,7 @@ module.exports = [
       ]);
     }],
    ],
+
    ['drivers',
     ['collect', () => {
       return assert.eventually.deepEqual(
@@ -56,6 +81,7 @@ module.exports = [
         [1, 2, 3]);
     }],
    ],
+
    ['binding',
     ['late', () => {
       const em = z.emitter();
@@ -65,6 +91,7 @@ module.exports = [
       return test;
     }],
    ],
+
    ['transforms',
     ['map', () => {
       return assertCollected(
@@ -122,6 +149,46 @@ module.exports = [
           z.emitter([1, 2, 3])),
         [0, 1, 3, 6]);
     }],
+    ['observe', () => {
+      const data = [1, 2, 3];
+      const fn = (val) => val || data[0];
+      const o = z.observe(fn, z.emitter(data));
+      return Promise.all([
+        assertCollected(z.observe(fn, z.emitter(data)), [1, 2, 3]),
+        assertCollected(o, [1, 2, 3]),
+        assertCollected(o, [1, 2, 3]),
+      ]);
+    }],
+    ['cat',
+     ['basic', () => {
+       const em1 = z.emitter([1, 2, 3]);
+       const em2 = z.emitter([4, 5, 6]);
+       return assertCollected(
+         z.cat(z.emitter([em1, em2])), [1, 2, 3, 4, 5, 6]);
+     }],
+     ['edge: empty', () => {
+       return assertCollected(
+         z.cat(z.emitter([])), []);
+     }],
+     ['edge: empties', () => {
+       const em1 = z.emitter([]);
+       const em2 = z.emitter([]);
+       return assertCollected(
+         z.cat(z.emitter([em1, em2])), []);
+     }],
+    ],
+    ['mapcat', () => {
+       const ems = [z.emitter([1, 2, 3]), z.emitter([4, 5, 6])];
+       return assertCollected(
+         z.mapcat(i => ems[i], z.emitter([0,1])), [1, 2, 3, 4, 5, 6]);
+    }],
+   ],
+  ['combining',
+    ['merge', () => {
+      return assertCollected(
+        z.merge(z.emitter([1, 2]), z.emitter([3, 4])),
+        [1, 2, 3, 4]);
+    }],
     ['reduceAll', () => {
       return assertCollected(
         z.reduceAll(
@@ -137,14 +204,8 @@ module.exports = [
         [0, 1, 2, 6, 10]);
     }],
    ],
-   ['combining',
-    ['merge', () => {
-      return assertCollected(
-        z.merge(z.emitter([1, 2]), z.emitter([3, 4])),
-        [1, 2, 3, 4]);
-    }],
-   ],
-   ['flow',
+
+  ['flow',
     ['basic', () => {
       return assertCollected(
         z.flow(
@@ -163,40 +224,6 @@ module.exports = [
         [2, 4]);
     }],
    ],
-
-   ['observe', () => {
-     const data = [1, 2, 3];
-     const fn = (val) => val || data[0];
-     const o = z.observe(fn, z.emitter(data));
-     return Promise.all([
-       assertCollected(z.observe(fn, z.emitter(data)), [1, 2, 3]),
-       assertCollected(o, [1, 2, 3]),
-       assertCollected(o, [1, 2, 3]),
-     ]);
-   }],
-   ['apply', () => {
-     return assertCollected(
-       z.apply(
-         (a, b, c) => a + b + c,
-         z.emitter([1]),
-         2,
-         z.emitter([3])),
-       [6]);
-   }],
-   ['multiple observers all receive value', () => {
-     const em = z.emitter((emit, error, complete) => {
-       setTimeout(() => {
-         emit(4);
-         complete();
-       }, 10);
-     });
-     const obs = z.observe((val) => val || 1, em);
-     return Promise.all([
-       assertCollected(obs, [1, 4]),
-       assertCollected(obs, [1, 4]),
-     ]);
-   }],
-  ],
 
   ['Observable',
    ['only receive last value', () => {
