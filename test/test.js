@@ -155,7 +155,8 @@ module.exports = [
    }],
    ['observe a function\'s result', () => {
      return assertCollected(
-       z.emitify((a, b, c) => a + b + c)(
+       z.apply(
+         (a, b, c) => a + b + c,
          z.emitter([1]),
          2,
          z.emitter([3])),
