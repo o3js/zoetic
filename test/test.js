@@ -178,9 +178,9 @@ module.exports = [
      }],
     ],
     ['mapcat', () => {
-       const ems = [z.emitter([1, 2, 3]), z.emitter([4, 5, 6])];
-       return assertCollected(
-         z.mapcat(i => ems[i], z.emitter([0,1])), [1, 2, 3, 4, 5, 6]);
+      const ems = [z.emitter([1, 2, 3]), z.emitter([4, 5, 6])];
+      return assertCollected(
+        z.mapcat(i => ems[i], z.emitter([0,1])), [1, 2, 3, 4, 5, 6]);
     }],
    ],
   ['combining',
