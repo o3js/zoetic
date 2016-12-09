@@ -4,6 +4,7 @@ const fp = require('lodash/fp');
 const Promise = require('bluebird');
 const combine = require('./combinations');
 const dom = require('./dom');
+const Observable = require('./observable');
 
 function collect(em) {
   return new Promise((resolve, reject) => {
@@ -43,6 +44,13 @@ function apply(fn, ...args) {
       combine.adjoin(fp.map(castEmitter, args))));
 }
 
+function observable(...args) {
+  const [initial, em] = args.length > 1
+          ? args
+          : [undefined, args[0]];
+  return new Observable(initial, em);
+}
+
 module.exports = fp.extendAll([
   transforms,
   {
@@ -51,6 +59,7 @@ module.exports = fp.extendAll([
     each,
     flow,
     apply,
+    observable,
     emitter: util.emitter,
     bind: util.bind,
     callbackFor: util.callbackFor,

@@ -104,6 +104,21 @@ function observe(fn) {
   };
 }
 
+function memoize() {
+  return (source) => {
+    let last;
+    let hasEmitted = false;
+    return (emit, error, complete) => {
+      if (hasEmitted) emit(last);
+      source(
+        (item, unsub) => {
+          last = item;
+          hasEmitted = true;
+          emit(item, unsub);
+        }, error, complete);
+    };
+  };
+}
 
 function debounce(ms) {
   return (source) => {
@@ -215,4 +230,5 @@ module.exports = fp.mapValues(makeTransform, {
   log,
   startWith,
   observe,
+  memoize,
 });

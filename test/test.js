@@ -141,9 +141,8 @@ module.exports = [
         [2, 4]);
     }],
    ],
-  ],
-  ['Observable',
-   ['retains value', () => {
+
+   ['observe', () => {
      const data = [1, 2, 3];
      const fn = (val) => val || data[0];
      const o = z.observe(fn, z.emitter(data));
@@ -153,7 +152,7 @@ module.exports = [
        assertCollected(o, [1, 2, 3]),
      ]);
    }],
-   ['observe a function\'s result', () => {
+   ['apply', () => {
      return assertCollected(
        z.apply(
          (a, b, c) => a + b + c,
@@ -162,15 +161,54 @@ module.exports = [
          z.emitter([3])),
        [6]);
    }],
-   ['multiple observers', () => {
-     const em = z.emitter();
-     const emCB = z.callbackFor(em);
+   ['multiple observers all receive value', () => {
+     const em = z.emitter((emit, error, complete) => {
+       setTimeout(() => {
+         emit(4);
+         complete();
+       }, 10);
+     });
      const obs = z.observe((val) => val || 1, em);
-     setTimeout(() => {
-       emCB(4);
-     }, 100);
-     assertCollected(obs, [1, 4]);
-     assertCollected(obs, [1, 4]);
+     return Promise.all([
+       assertCollected(obs, [1, 4]),
+       assertCollected(obs, [1, 4]),
+     ]);
+   }],
+  ],
+
+  ['Observable',
+   ['only receive last value', () => {
+     const obs = z.observable(z.emitter([1, 2, 3]));
+     return Promise.all([
+       assertCollected(obs, [3]),
+       assertCollected(obs, [3]),
+     ]);
+   }],
+   ['receive updates', () => {
+     const em = z.emitter((emit, error, complete) => {
+       setTimeout(() => {
+         emit(4);
+         complete();
+       }, 10);
+     });
+     const obs = z.observable(em);
+     return Promise.all([
+       assertCollected(obs, [undefined, 4]),
+       assertCollected(obs, [undefined, 4]),
+     ]);
+   }],
+   ['static initial value', () => {
+     const em = z.emitter((emit, error, complete) => {
+       setTimeout(() => {
+         emit(4);
+         complete();
+       }, 10);
+     });
+     const obs = z.observable(1, em);
+     return Promise.all([
+       assertCollected(obs, [1, 4]),
+       assertCollected(obs, [1, 4]),
+     ]);
    }],
   ],
 ];
