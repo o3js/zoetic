@@ -23,26 +23,46 @@ const assertEmitterProps = (things) => {
 
 const sourceHelpers = {
   fromEmitter: (em) => fp.bind(em.subscribe, em),
-  fromArray: (arr) => (emit, emitError, complete) => {
+  fromArray: (arr) => (emit, emitError, complete, opts) => {
+    opts.onHalt(() => {
+      [emit, complete] = [fp.noop, fp.noop];
+    });
     emitError = null;
     fp.each((item) => { emit(item, fp.noop); }, arr);
     complete();
   },
-  fromPromise: (p) => (emit, emitError, complete) => {
+  fromPromise: (p) => (emit, error, complete, opts) => {
+    opts.onHalt(() => {
+      [emit, error, complete] = [fp.noop, fp.noop, fp.noop];
+    });
     p.then(
-      (item) => emit(item, fp.noop),
-      (err) => emitError(err, fp.noop)
+      (item) => emit(item),
+      (err) => error(err)
     ).then(complete);
   },
-  fromEventEmitter: (eventEmitter, eventName) =>
-    (emit) => {
-      eventEmitter.addListener(
-        eventName,
-        function emitEvent(evt) {
-          emit(evt, () => { eventEmitter.removeListener(emitEvent); });
-        });
-    },
 };
+
+function halter(chained) {
+  let listeners = [];
+  let halted = false;
+  function onHalt(fn) {
+    listeners.push(fn);
+  }
+
+  function halt() {
+    halted = true;
+    fp.each(l => l(), listeners);
+    listeners = [];
+  }
+
+  function isHalted() {
+    return halted;
+  }
+
+  chained.onHalt(halt);
+
+  return { onHalt, halt, isHalted };
+}
 
 function makeSource(thing, ...rest) {
   if (fp.isFunction(thing)) {
@@ -70,13 +90,13 @@ function makeSource(thing, ...rest) {
 function unboundEmitter() {
   let source = null;
   let pendingSubscribers = null;
-  function subscribe(emit, error, complete) {
+  function subscribe(emit, error, complete, { onHalt = fp.noop }) {
     if (source) {
       source(emit, error, complete);
       return;
     }
     pendingSubscribers = pendingSubscribers || [];
-    pendingSubscribers.push([emit, error, complete]);
+    pendingSubscribers.push([emit, error, complete, { onHalt }]);
   }
 
   function bind_(aSource) {
@@ -91,10 +111,18 @@ function unboundEmitter() {
   return { subscribe, bind: bind_ };
 }
 
+function boundEmitter(source) {
+  function subscribe(emit, error, complete, { onHalt = fp.noop } = {}) {
+    source(emit, error, complete, { onHalt });
+  }
+
+  return { subscribe };
+}
+
 function emitter(thing) {
   const str = fp.isUndefined(thing)
           ? unboundEmitter()
-          : { subscribe: makeSource(thing) };
+          : boundEmitter(makeSource(thing));
   return str;
 }
 
@@ -130,4 +158,5 @@ module.exports = {
   emitter,
   bind,
   callbackFor,
+  halter,
 };

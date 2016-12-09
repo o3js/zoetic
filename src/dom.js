@@ -4,15 +4,18 @@ const { observe } = require('./transforms');
 
 function listen(eventName, em = emitter()) {
   return (el, onRelease = fp.noop) => {
-    em.bind((emit, error, complete) => {
+    em.bind((emit, error, complete, opts) => {
       error = null;
       onRelease(() => {
         em = null;
         complete();
       });
-      el.addEventListener(eventName, function listener(evt) {
-        emit(evt, () => em.removeListener(eventName, listener));
+      let halted = false;
+      opts.onHalt(() => {
+        el.removeListener(emit);
+        halted = true;
       });
+      if (!halted) el.addEventListener(eventName, emit);
     });
     return em;
   };

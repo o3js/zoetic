@@ -13,15 +13,14 @@ class Observable {
       (item) => {
         if (this.hasError) return;
         this.current = item;
-        fp.each((listener) => listener.emit(item, () => {
-          fp.defer(() => fp.remove(listener, this.listeners));
-        }), this.listeners);
+        fp.each((listener) => listener.emit(item), this.listeners);
       },
       (err) => {
         if (this.hasError) return;
         this.hasError = true;
         this.error = err;
         fp.each((listener) => listener.error(err, fp.noop), this.listeners);
+        fp.each((listener) => listener.complete(), this.listeners);
         this.listeners = [];
       },
       () => {
@@ -31,7 +30,11 @@ class Observable {
       });
   }
 
-  subscribe(emit, error, complete) {
+  _unsubscribe(listener) {
+    fp.defer(() => fp.remove(listener, this.listeners));
+  }
+
+  subscribe(emit, error, complete, opts) {
     if (this.completed) {
       emit(this.current, fp.noop);
       complete();
@@ -39,12 +42,22 @@ class Observable {
     }
     if (this.hasError) {
       error(this.error, fp.noop);
+      complete();
+      return;
     }
+
+    let halted = false;
     const listener = { emit, error, complete };
-    this.listeners.push(listener);
-    emit(this.current, () => {
-      fp.defer(() => fp.remove(listener, this.listeners));
+    opts.onHalt(() => {
+      halted = true;
+      this._unsubscribe(listener);
     });
+    if (!halted) {
+      this.listeners.push(listener);
+      emit(this.current, () => {
+        fp.defer(() => fp.remove(listener, this.listeners));
+      });
+    }
   }
 
 }

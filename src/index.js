@@ -12,16 +12,16 @@ function collect(em) {
     em.subscribe(
       (item) => results.push(item),
       reject,
-      () => resolve(results));
+      () => resolve(results),
+      { onHalt: fp.noop });
   });
 }
 
-function each(emit_, error, complete, em) {
-  if (arguments.length === 2) {
-    // eslint-disable-next-line prefer-rest-params
-    return arguments[1].subscribe(emit_, fp.noop, fp.noop);
-  }
-  return em.subscribe(emit_, error, complete);
+function each(...args) {
+  const em = args.pop();
+  const [emit, error, complete] = fp.map(arg => arg || fp.noop, args);
+
+  return em.subscribe(emit, error, complete);
 }
 
 function flow(...args) {

@@ -5,24 +5,19 @@ const fp = require('lodash/fp');
 const Promise = require('bluebird');
 
 function map(fn) {
-  return (source) => (emit, error, complete) => {
+  return (source) => (emit, error, complete, opts) => {
     source(
-      // wasteful array boxing, but the idea is to use the lodash
-      // implementation
-      (item, unsub) => { emit(fn(item), unsub); },
+      (item) => { emit(fn(item)); },
       error,
-      complete);
+      complete,
+      opts);
   };
 }
 
 function cat() {
-  return (source) => (emit, error, complete) => {
-    const unsubs = [];
+  return (source) => (emit, error, complete, opts) => {
     const isChildComplete = [];
     let isParentComplete = false;
-    function unsubChildren() {
-      fp.each(u => u(), unsubs);
-    }
     function attemptComplete() {
       if (isParentComplete && fp.all(fp.identity, isChildComplete)) {
         complete();
@@ -30,24 +25,18 @@ function cat() {
     }
     let i = 0;
     source(
-      // wasteful array boxing, but the idea is to use the lodash
-      // implementation
-      (item, unsub) => {
+      (item) => {
         const cur = i; i += 1;
         isChildComplete[cur] = false;
         item.subscribe(
-          (it, un) => {
-            unsubs[cur] = un;
-            emit(it, () => { unsub(); unsubChildren(); });
-          },
-          (err, un) => {
-            unsubs[cur] = un;
-            error(err, () => { unsub(); unsubChildren(); });
-          },
-          () => { isChildComplete[cur] = true; attemptComplete(); });
+          emit,
+          error,
+          () => { isChildComplete[cur] = true; attemptComplete(); },
+          opts);
       },
       error,
-      () => { isParentComplete = true; attemptComplete(); });
+      () => { isParentComplete = true; attemptComplete(); },
+      opts);
   };
 }
 
@@ -56,153 +45,160 @@ function mapcat(fn) {
 }
 
 function filter(predicate) {
-  return (source) => (emit, error, complete) => {
+  return (source) => (emit, error, complete, opts) => {
     return source(
       (item) => {
         if (fp.filter(predicate, [item]).length > 0) emit(item);
       },
       error,
-      complete);
+      complete,
+      opts);
   };
 }
 
 function take(count) {
   return (source) => {
-    return (emit, error, complete) => {
+    return (emit, error, complete, opts) => {
       let remaining = count;
       if (remaining === 0) {
         complete();
       }
+
+      const halter = util.halter(opts);
+
       source(
-        (val, unsub) => {
+        (val) => {
           if (!remaining) return;
           remaining--;
-          emit(val, unsub);
-          if (remaining === 0) {
+          emit(val);
+          if (remaining === 0 && !halter.isHalted()) {
             complete();
-            complete = fp.noop;
-            unsub();
+            halter.halt();
             return;
           }
         },
         error,
-        complete);
+        complete,
+        { onHalt: halter.onHalt });
     };
   };
 }
 
 function latest(count) {
   return (source) => {
-    return (emit, error, complete) => {
+    return (emit, error, complete, opts) => {
       const buffered = [];
       source(
-        (item, unsub) => {
+        (item) => {
           buffered.push(item);
           if (buffered.length > count) buffered.shift();
-          if (buffered.length === count) emit(fp.clone(buffered), unsub);
+          if (buffered.length === count) emit(fp.clone(buffered));
         },
         error,
-        complete);
+        complete,
+        opts);
     };
   };
 }
 
 function startWith(value) {
   return (source) => {
-    return (emit, error, complete) => {
+    return (emit, error, complete, opts) => {
       emit(value);
-      source(emit, error, complete);
+      source(emit, error, complete, opts);
     };
   };
 }
 
 function changes() {
   return (source) => {
-    return (emit, error, complete) => {
+    return (emit, error, complete, opts) => {
       const last = [];
       source(
-        (item, unsub) => {
+        (item) => {
           if (last.length && fp.equals(last[0], item)) return;
           last[0] = item;
-          emit(item, unsub);
+          emit(item);
         },
         error,
-        complete);
+        complete,
+        opts);
     };
   };
 }
 
 function observe(fn) {
   return (source) => {
-    return (emit, error, complete) => {
+    return (emit, error, complete, opts) => {
       fp.flowRight(
         changes(),
         startWith(fn()),
         map(fn)
-      )(source)(emit, error, complete);
+      )(source)(emit, error, complete, opts);
     };
   };
 }
 
 function reduce(reducer, initial) {
   return (source) => {
-    return (emit, error, complete) => {
+    return (emit, error, complete, opts) => {
       let last = initial;
-      let unsubbed = false;
-      emit(initial, () => { unsubbed = true; });
-      if (unsubbed) return;
-      source(
-        (item, unsub) => {
-          if (unsubbed) {
-            unsub();
-            return;
-          }
+      emit(initial);
+
+      let halted = false;
+      opts.onHalt(() => {
+        halted = true;
+      });
+
+      if (!halted) source(
+        (item) => {
           last = reducer(last, item);
-          emit(last, unsub);
-        },
-        (err, unsub) => {
-          if (unsubbed) {
-            unsub();
-            return;
-          }
-          error(err, unsub);
-        }, complete);
+          emit(last);
+        }, error, complete, opts);
     };
   };
 }
 
 function debounce(ms) {
   return (source) => {
-    return (next, error, complete) => {
+    return (emit, error, complete, opts) => {
       let myTimeout;
       let flushed;
       let completed;
+
+      let halted = false;
+      opts.onHalt(() => {
+        if (myTimeout) clearTimeout(myTimeout);
+        halted = true;
+      });
+
       source(
-        (item, unsub) => {
+        (item) => {
           flushed = false;
           if (myTimeout) clearTimeout(myTimeout);
           myTimeout = setTimeout(() => {
-            next(item, unsub);
+            emit(item);
             flushed = true;
-            if (completed) complete();
+            if (completed && !halted) complete();
           }, ms);
         },
         error,
         () => {
           completed = true;
           if (flushed) complete();
-        });
+        },
+        opts);
     };
   };
 }
 
 function tap(fn) {
-  return (source) => (emit, error, complete) => {
+  return (source) => (emit, error, complete, opts) => {
     source(
-      (item, unsub) => {
-        fn(item); emit(item, unsub);
+      (item) => {
+        fn(item); emit(item);
       },
-      error, complete);
+      error, complete, opts);
   };
 }
 
@@ -216,38 +212,30 @@ function log(label) {
 // implementation -- perhaps there is a better way or it is not worth it.
 function resolve() {
   return (source) => {
-    return (emit, error, complete) => {
+    return (emit, error, complete, opts) => {
       let pending = Promise.resolve();
+      opts.onHalt(() => {
+        emit = error = complete = fp.noop;
+      });
       source(
-        (val, unsub) => {
-          function wrappedUnsub() {
-            emit = error = complete = fp.noop;
-            unsub();
-          }
+        (val) => {
           pending = pending.then(
             () => {
               return Promise.resolve(val)
-                .then((item) => emit(item, wrappedUnsub),
-                      (err) => error(err, wrappedUnsub));
+                .then((item) => emit(item),
+                      (err) => error(err));
             }
           );
         },
 
-        (err, unsub) => {
-          function wrappedUnsub() {
-            emit = error = complete = fp.noop;
-            unsub();
-          }
-          pending = pending.then(
-            () => {
-              error(err, wrappedUnsub);
-            }
-          );
+        (err) => {
+          pending = pending.then(() => { error(err); });
         },
 
         () => {
           pending.then(complete);
-        }
+        },
+        opts
       );
     };
   };
