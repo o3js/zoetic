@@ -2,30 +2,20 @@ const fp = require('lodash/fp');
 const util = require('./util');
 const { reduce, map } = require('./transforms');
 
-function unsubAll(unsubs) {
-  fp.each(unsub => unsub(), unsubs);
-}
-
-function unsubAllValues(unsubs) {
-  fp.each(unsub => unsub(), unsubs);
-}
-
 function adjoinEmitters(ems) {
   const completed = fp.mapValues(() => false, ems);
   return util.emitter((emit, error, complete, opts) => {
     let tuple = fp.isArray(ems) ? [] : {};
-    const unsubs = {};
-    const _unsubAll = fp.partial(unsubAllValues, [unsubs]);
     let allSubscribed = false;
     fp.each((key) => {
       ems[key].subscribe(
         (item) => {
           tuple = fp.clone(tuple);
           tuple[key] = item;
-          if (allSubscribed) emit(tuple, _unsubAll);
+          if (allSubscribed) emit(tuple);
         },
         (err) => {
-          error(err, _unsubAll);
+          error(err);
         },
         () => {
           completed[key] = true;
