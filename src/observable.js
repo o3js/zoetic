@@ -1,6 +1,5 @@
 const fp = require('lodash/fp');
 const { startWith, changes } = require('./transforms');
-const util = require('./util');
 
 class Observable {
 
@@ -35,7 +34,9 @@ class Observable {
     fp.defer(() => fp.remove(listener, this.listeners));
   }
 
-  subscribe(emit, error, complete, { onHalt = fp.noop } = {}) {
+  subscribe(
+    emit, error = fp.noop, complete = fp.noop, { onHalt = fp.noop } = {}
+  ) {
     if (this.completed) {
       emit(this.current, fp.noop);
       complete();
