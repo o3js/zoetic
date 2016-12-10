@@ -4,7 +4,8 @@ const util = require('./util');
 const fp = require('lodash/fp');
 const Promise = require('bluebird');
 
-function map(fn) {
+function map(mapper) {
+  const fn = fp.isFunction(mapper) ? mapper : fp.get(mapper);
   return (source) => (emit, error, complete, opts) => {
     source(
       (item) => { emit(fn(item)); },
