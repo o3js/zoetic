@@ -12,21 +12,19 @@ function unsubAllValues(unsubs) {
 
 function adjoinEmitters(ems) {
   const completed = fp.mapValues(() => false, ems);
-  return util.emitter((emit, error, complete) => {
+  return util.emitter((emit, error, complete, opts) => {
     let tuple = fp.isArray(ems) ? [] : {};
     const unsubs = {};
     const _unsubAll = fp.partial(unsubAllValues, [unsubs]);
     let allSubscribed = false;
     fp.each((key) => {
       ems[key].subscribe(
-        (item, unsub) => {
-          unsubs[key] = unsub;
+        (item) => {
           tuple = fp.clone(tuple);
           tuple[key] = item;
           if (allSubscribed) emit(tuple, _unsubAll);
         },
-        (err, unsub) => {
-          unsubs[key] = unsub;
+        (err) => {
           error(err, _unsubAll);
         },
         () => {
@@ -34,12 +32,13 @@ function adjoinEmitters(ems) {
           if (fp.every(fp.identity, completed)) {
             complete();
           }
-        });
+        },
+        opts);
     }, fp.keys(ems));
     allSubscribed = true;
     // The first emit happens after each adjoined emitter has had a chance
     // to fire synchronously
-    emit(tuple, _unsubAll);
+    emit(tuple);
   });
 }
 
@@ -63,24 +62,17 @@ function adjoin(ems) {
 }
 
 function merge(...ems) {
-  return util.emitter((emit, error, complete) => {
+  return util.emitter((emit, error, complete, opts) => {
     const completed = fp.map(() => false, ems);
-    const unsubs = [];
-    const _unsubAll = fp.partial(unsubAll, [unsubs]);
     fp.times(i => {
       ems[i].subscribe(
-        (item, unsub) => {
-          unsubs[i] = unsub;
-          emit(item, _unsubAll);
-        },
-        (err, unsub) => {
-          unsubs[i] = unsub;
-          error(err, _unsubAll);
-        },
+        emit,
+        error,
         () => {
           completed[i] = true;
           if (fp.every(fp.identity, completed)) complete();
-        });
+        },
+        opts);
     }, ems.length);
   });
 }

@@ -19,9 +19,8 @@ function collect(em) {
 
 function each(...args) {
   const em = args.pop();
-  const [emit, error, complete] = fp.map(arg => arg || fp.noop, args);
-
-  return em.subscribe(emit, error, complete);
+  const [emit, error, complete] = args;
+  return em.subscribe(emit || fp.noop, error || fp.noop, complete || fp.noop);
 }
 
 function flow(...args) {

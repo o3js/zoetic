@@ -90,9 +90,9 @@ function makeSource(thing, ...rest) {
 function unboundEmitter() {
   let source = null;
   let pendingSubscribers = null;
-  function subscribe(emit, error, complete, { onHalt = fp.noop }) {
+  function subscribe(emit, error, complete, { onHalt = fp.noop } = {}) {
     if (source) {
-      source(emit, error, complete);
+      source(emit, error, complete, { onHalt });
       return;
     }
     pendingSubscribers = pendingSubscribers || [];

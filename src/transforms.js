@@ -203,7 +203,7 @@ function tap(fn) {
 }
 
 function log(label) {
-  label |= '';
+  label = label || '';
   // eslint-disable-next-line no-console
   return tap((item) => { console.log(label, item); });
 }
