@@ -71,6 +71,7 @@ function reduceAll(...args) {
   const [reducers, initial, ems] = args.length > 2
           ? args
           : [args[0], undefined, args[1]];
+
   return reduce(
     (last, [idx, val]) => reducers[idx](last, val),
     initial,
@@ -80,5 +81,14 @@ function reduceAll(...args) {
         fp.range(0, ems.length))));
 }
 
+function props(...args) {
+  const em = args.pop();
+  return fp.transform(
+    (result, prop) => {
+      result[prop] = map(prop, em);
+    },
+    {},
+    args);
+}
 
-module.exports = { adjoin, merge, reduceAll };
+module.exports = { adjoin, merge, reduceAll, props };

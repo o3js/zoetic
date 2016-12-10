@@ -13,29 +13,44 @@ function assertCollected(emitter, expected) {
 
 module.exports = [
   ['Emitter',
-   ['apply', () => {
-     return assertCollected(
-       z.apply(
-         (a, b, c) => a + b + c,
-         z.emitter([1]),
-         2,
-         z.emitter([3])),
-       [6]);
-   }],
-   ['multiple observers all receive value', () => {
-     const em = z.emitter((emit, error, complete) => {
-       setTimeout(() => {
-         emit(4);
-         complete();
-       }, 10);
-     });
-     const obs = z.observe((val) => val || 1, em);
-     return Promise.all([
-       assertCollected(obs, [1, 4]),
-       assertCollected(obs, [1, 4]),
-     ]);
-   }],
-  ],
+   ['misc',
+    ['apply', () => {
+      return assertCollected(
+        z.apply(
+          (a, b, c) => a + b + c,
+          z.emitter([1]),
+          2,
+          z.emitter([3])),
+        [6]);
+    }],
+
+    ['props', () => {
+      const em = z.emitter([
+        { foo: 1, bar: 2 },
+        { foo: 3, bar: 4 },
+        { foo: 5, bar: 6 },
+      ]);
+      const obj = z.props('foo', 'bar', em);
+      return Promise.all([
+        assertCollected(obj.foo, [1, 3, 5]),
+        assertCollected(obj.bar, [2, 4, 6]),
+      ]);
+    }],
+
+    ['multiple observers all receive value', () => {
+      const em = z.emitter((emit, error, complete) => {
+        setTimeout(() => {
+          emit(4);
+          complete();
+        }, 10);
+      });
+      const obs = z.observe((val) => val || 1, em);
+      return Promise.all([
+        assertCollected(obs, [1, 4]),
+        assertCollected(obs, [1, 4]),
+      ]);
+    }],
+   ],
 
    ['multiple subscribers get same thing',
     ['array', () => {
@@ -239,6 +254,7 @@ module.exports = [
         [2, 4]);
     }],
    ],
+  ],
 
   ['Observable',
    ['only receive last value', () => {
