@@ -93,11 +93,18 @@ module.exports = [
    ],
 
    ['transforms',
-    ['map', () => {
-      return assertCollected(
-        z.map((i) => i * 2, z.emitter([1, 2, 3])),
-        [2, 4, 6]);
-    }],
+    ['map',
+     ['fn', () => {
+       return assertCollected(
+         z.map((i) => i * 2, z.emitter([1, 2, 3])),
+         [2, 4, 6]);
+     }],
+     ['prop name', () => {
+       return assertCollected(
+         z.map('foo', z.emitter([{ foo: 1 }, { foo: 2 }, { foo: 3 }])),
+         [1, 2, 3]);
+     }],
+    ],
     ['filter', () => {
       return assertCollected(
         z.filter((i) => {
@@ -117,11 +124,11 @@ module.exports = [
             [1, Promise.delay(10).then(() => 2), 3])),
         [1, 2, 3]);
     }],
-   ['latest', () => {
-     return assertCollected(
-       z.latest(2, z.emitter([0, 1, 2])),
-       [[0, 1], [1, 2]]);
-   }],
+    ['latest', () => {
+      return assertCollected(
+        z.latest(2, z.emitter([0, 1, 2])),
+        [[0, 1], [1, 2]]);
+    }],
     ['auto cast to emitter', () => {
       return assertCollected(
         z.map((i) => i * 2, [1, 2, 3]),
@@ -166,6 +173,13 @@ module.exports = [
        return assertCollected(
          z.cat(z.emitter([em1, em2])), [1, 2, 3, 4, 5, 6]);
      }],
+     ['maintains order', () => {
+       const em1 = z.resolve(
+         z.emitter([1, 2, Promise.resolve(3).delay(10)]));
+       const em2 = z.emitter([4, 5, 6]);
+       return assertCollected(
+         z.cat(z.emitter([em1, em2])), [1, 2, 3, 4, 5, 6]);
+     }],
      ['edge: empty', () => {
        return assertCollected(
          z.cat(z.emitter([])), []);
@@ -180,9 +194,10 @@ module.exports = [
     ['mapcat', () => {
       const ems = [z.emitter([1, 2, 3]), z.emitter([4, 5, 6])];
       return assertCollected(
-        z.mapcat(i => ems[i], z.emitter([0,1])), [1, 2, 3, 4, 5, 6]);
+        z.mapcat(i => ems[i], z.emitter([0, 1])), [1, 2, 3, 4, 5, 6]);
     }],
    ],
+
   ['combining',
     ['merge', () => {
       return assertCollected(

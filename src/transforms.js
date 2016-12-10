@@ -15,28 +15,38 @@ function map(mapper) {
   };
 }
 
+
 function cat() {
   return (source) => (emit, error, complete, opts) => {
-    const isChildComplete = [];
     let isParentComplete = false;
-    function attemptComplete() {
-      if (isParentComplete && fp.all(fp.identity, isChildComplete)) {
+    let isActive = false;
+    const children = [];
+
+    function nextChild() {
+      if (!children.length && isParentComplete) {
         complete();
+        return;
       }
-    }
-    let i = 0;
-    source(
-      (item) => {
-        const cur = i; i += 1;
-        isChildComplete[cur] = false;
-        item.subscribe(
+      if (children.length) {
+        isActive = true;
+        children.pop().subscribe(
           emit,
           error,
-          () => { isChildComplete[cur] = true; attemptComplete(); },
+          () => { isActive = false; nextChild(); },
           opts);
+      }
+    }
+
+    source(
+      (item) => {
+        children.push(item);
+        if (!isActive) nextChild();
       },
       error,
-      () => { isParentComplete = true; attemptComplete(); },
+      () => {
+        isParentComplete = true;
+        if (!children.length) complete();
+      },
       opts);
   };
 }
