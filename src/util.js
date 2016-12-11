@@ -65,6 +65,7 @@ function halter(chained) {
 }
 
 function makeSource(thing, ...rest) {
+  assert(thing, 'Cannot make emitter source from: ' + JSON.stringify(thing));
   if (fp.isFunction(thing)) {
     return thing;
   }

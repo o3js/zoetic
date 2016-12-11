@@ -52,6 +52,7 @@ function adjoin(ems) {
 }
 
 function merge(...ems) {
+  if (!ems.length) return util.emitter([]);
   return util.emitter((emit, error, complete, opts) => {
     const completed = fp.map(() => false, ems);
     fp.times(i => {
@@ -86,6 +87,7 @@ function props(...args) {
   return fp.transform(
     (result, prop) => {
       result[prop] = map(prop, em);
+      return result;
     },
     {},
     args);

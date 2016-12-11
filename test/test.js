@@ -214,11 +214,18 @@ module.exports = [
    ],
 
   ['combining',
-    ['merge', () => {
+   ['merge',
+    ['basic', () => {
       return assertCollected(
         z.merge(z.emitter([1, 2]), z.emitter([3, 4])),
         [1, 2, 3, 4]);
     }],
+    ['bugfix: merge no streams completes', () => {
+      return assertCollected(
+        z.merge(),
+        []);
+    }],
+   ],
     ['reduceAll', () => {
       return assertCollected(
         z.reduceAll(
