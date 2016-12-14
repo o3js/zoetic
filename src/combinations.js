@@ -68,6 +68,15 @@ function merge(...ems) {
   });
 }
 
+// TODO: needs tests, especially for error cases
+function lastWith(lastEm, em) {
+  return util.emitter((emit, error, complete, opts) => {
+    let last;
+    lastEm.subscribe((item) => { last = item; }, error, fp.noop, opts);
+    em.subscribe((item) => emit([last, item]), error, complete);
+  });
+}
+
 function reduceAll(...args) {
   const [reducers, initial, ems] = args.length > 2
           ? args
@@ -93,4 +102,4 @@ function props(...args) {
     args);
 }
 
-module.exports = { adjoin, merge, reduceAll, props };
+module.exports = { adjoin, merge, reduceAll, props, lastWith };

@@ -2,9 +2,9 @@ const transforms = require('./transforms');
 const util = require('./util');
 const fp = require('lodash/fp');
 const Promise = require('bluebird');
-const combine = require('./combinations');
+const combinations = require('./combinations');
 const dom = require('./dom');
-const Observable = require('./observable');
+const Sink = require('./sink');
 
 function collect(em) {
   return new Promise((resolve, reject) => {
@@ -40,27 +40,33 @@ function apply(fn, ...args) {
   return map(
     fp.spread(fn),
     changes(
-      combine.adjoin(fp.map(castEmitter, args))));
+      combinations.adjoin(fp.map(castEmitter, args))));
 }
 
-function observable(...args) {
-  const [initial, em] = args.length > 1
-          ? args
-          : [undefined, args[0]];
-  return new Observable(initial, em);
+function observable(initial, em = util.emitter([])) {
+  return new Sink(
+    transforms.changes(
+      transforms.startWith(initial, em)));
+}
+
+function sink(...args) {
+  if (args.length === 1) return new Sink(args[0]);
+  return new Sink(combinations.merge(...args));
 }
 
 module.exports = fp.extendAll([
   transforms,
   {
-    merge: combine.merge,
-    reduceAll: combine.reduceAll,
-    props: combine.props,
+    merge: combinations.merge,
+    reduceAll: combinations.reduceAll,
+    props: combinations.props,
+    lastWith: combinations.lastWith,
     collect,
     each,
     flow,
     apply,
     observable,
+    sink,
     emitter: util.emitter,
     bind: util.bind,
     callbackFor: util.callbackFor,

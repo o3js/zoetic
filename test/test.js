@@ -264,10 +264,10 @@ module.exports = [
   ],
 
   ['Observable',
-   ['only receive last value', () => {
-     const obs = z.observable(z.emitter([1, 2, 3]));
+   ['laziness -- first subscribers receives everything', () => {
+     const obs = z.observable(null, z.emitter([1, 2, 3]));
      return Promise.all([
-       assertCollected(obs, [3]),
+       assertCollected(obs, [null, 1, 2, 3]),
        assertCollected(obs, [3]),
      ]);
    }],
@@ -278,7 +278,7 @@ module.exports = [
          complete();
        }, 10);
      });
-     const obs = z.observable(em);
+     const obs = z.observable(undefined, em);
      return Promise.all([
        assertCollected(obs, [undefined, 4]),
        assertCollected(obs, [undefined, 4]),
