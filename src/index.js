@@ -60,7 +60,7 @@ module.exports = fp.extendAll([
     merge: combinations.merge,
     reduceAll: combinations.reduceAll,
     props: combinations.props,
-    lastWith: combinations.lastWith,
+    latestWith: combinations.latestWith,
     collect,
     each,
     flow,
