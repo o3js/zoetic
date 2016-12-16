@@ -12,9 +12,10 @@ function listen(eventName, em = emitter()) {
       });
       let halted = false;
       opts.onHalt(() => {
-        el.removeListener(emit);
+        el.removeEventListener(eventName, emit);
         halted = true;
       });
+
       if (!halted) el.addEventListener(eventName, emit);
     });
     return em;
@@ -22,12 +23,12 @@ function listen(eventName, em = emitter()) {
 }
 
 function bindel(field, eventName, em) {
-  return (el, onRemoved = fp.noop) => {
-    onRemoved(() => { el = null; });
+  return (el, onRelease = fp.noop) => {
+    onRelease(() => { el = null; });
     bind(
       observe(
         () => (el ? el[field] : null),
-        listen(eventName)(el, onRemoved)),
+        listen(eventName)(el, onRelease)),
       em);
   };
 }

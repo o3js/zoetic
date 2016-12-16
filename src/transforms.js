@@ -163,7 +163,7 @@ function reduce(reducer, initial) {
 
       if (!halted) source(
         (item) => {
-          last = reducer(last, item);
+          last = reducer(fp.cloneDeep(last), item);
           emit(last);
         }, error, complete, opts);
     };

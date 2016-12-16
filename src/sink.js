@@ -1,5 +1,5 @@
 const fp = require('lodash/fp');
-
+const assert = require('o3-sugar').assert;
 // TODO: should either emit all errors, or halt the source as soon as
 //       one error is received
 
@@ -45,12 +45,19 @@ class Sink {
         if (this.hasError) return;
         this.completed = true;
         fp.each((listener) => listener && listener.complete(), this.listeners);
-      });
+      },
+      { onHalt: fp.noop });
   }
 
-  subscribe(
-    emit, error = fp.noop, complete = fp.noop, { onHalt = fp.noop } = {}
-  ) {
+  subscribe(...args) {
+    const events = args.pop();
+    const [emit, error, complete] = [
+      args[0] || fp.noop,
+      args[1] || fp.noop,
+      args[2] || fp.noop,
+    ];
+    assert(events && events.onHalt, 'onHalt event callback is required');
+
     if (this.completed) {
       if (this.hasEmitted) emit(this.current, fp.noop);
       complete();
@@ -64,7 +71,7 @@ class Sink {
 
     let halted = false;
     const listener = { emit, error, complete };
-    onHalt(() => {
+    events.onHalt(() => {
       halted = true;
       this._halt(listener);
     });

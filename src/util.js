@@ -91,15 +91,20 @@ function makeSource(thing, ...rest) {
 function unboundEmitter() {
   let source = null;
   let pendingSubscribers = null;
-  function subscribe(
-    emit, error = fp.noop, complete = fp.noop, { onHalt = fp.noop } = {}
-  ) {
+  function subscribe(...args) {
+    const events = args.pop();
+    const [emit, error, complete] = [
+      args[0] || fp.noop,
+      args[1] || fp.noop,
+      args[2] || fp.noop,
+    ];
+    assert(events && events.onHalt, 'onHalt event callback is required');
     if (source) {
-      source(emit, error, complete, { onHalt });
+      source(emit, error, complete, events);
       return;
     }
     pendingSubscribers = pendingSubscribers || [];
-    pendingSubscribers.push([emit, error, complete, { onHalt }]);
+    pendingSubscribers.push([emit, error, complete, events]);
   }
 
   function bind_(aSource) {
@@ -115,10 +120,15 @@ function unboundEmitter() {
 }
 
 function boundEmitter(source) {
-  function subscribe(
-    emit, error = fp.noop, complete = fp.noop, { onHalt = fp.noop } = {}
-  ) {
-    source(emit, error, complete, { onHalt });
+  function subscribe(...args) {
+    const events = args.pop();
+    const [emit, error, complete] = [
+      args[0] || fp.noop,
+      args[1] || fp.noop,
+      args[2] || fp.noop,
+    ];
+    assert(events && events.onHalt, 'onHalt event callback is required');
+    source(emit, error, complete, events);
   }
 
   return { subscribe };

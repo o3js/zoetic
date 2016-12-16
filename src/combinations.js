@@ -73,7 +73,7 @@ function latestWith(latestEm, em) {
   return util.emitter((emit, error, complete, opts) => {
     let latest;
     latestEm.subscribe((item) => { latest = item; }, error, fp.noop, opts);
-    em.subscribe((item) => emit([latest, item]), error, complete);
+    em.subscribe((item) => emit([latest, item]), error, complete, opts);
   });
 }
 
