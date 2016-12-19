@@ -139,6 +139,16 @@ module.exports = [
             [1, Promise.delay(10).then(() => 2), 3])),
         [1, 2, 3]);
     }],
+    ['resolve latest', () => {
+      return assertCollected(
+        z.resolveLatest(
+          z.emitter([
+            1,
+            Promise.delay(10).then(() => 2),
+            Promise.delay(100).then(() => 3),
+          ])),
+        [3]);
+    }],
     ['latest', () => {
       return assertCollected(
         z.latest(2, z.emitter([0, 1, 2])),

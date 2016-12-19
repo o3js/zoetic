@@ -61,6 +61,7 @@ function sink(...args) {
 module.exports = fp.extendAll([
   transforms,
   {
+    adjoin: combinations.adjoin,
     merge: combinations.merge,
     reduceAll: combinations.reduceAll,
     props: combinations.props,

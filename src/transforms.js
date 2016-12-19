@@ -252,6 +252,41 @@ function resolve() {
   };
 }
 
+function resolveLatest() {
+  return (source) => {
+    return (emit, error, complete, opts) => {
+      let pending;
+      opts.onHalt(() => {
+        emit = error = complete = fp.noop;
+      });
+      source(
+        (val) => {
+          if (!val.then) val = Promise.resolve(val);
+          pending = val;
+          val.then((item) => {
+            if (pending === val) {
+              emit(item);
+            }
+          }, (err) => {
+            if (pending === val) {
+              error(err);
+            }
+          });
+        },
+
+        (err) => {
+          pending = pending.then(() => { error(err); });
+        },
+
+        () => {
+          pending.then(complete);
+        },
+        opts
+      );
+    };
+  };
+}
+
 function makeTransform(xf) {
   const arity = _s.parseParams(xf).length;
   const transformer = (...args) => {
@@ -274,6 +309,7 @@ module.exports = fp.mapValues(makeTransform, {
   take,
   latest,
   resolve,
+  resolveLatest,
   debounce,
   changes,
   tap,
