@@ -255,31 +255,31 @@ function resolve() {
 function resolveLatest() {
   return (source) => {
     return (emit, error, complete, opts) => {
-      let pending;
+      let latestPromise = Promise.resolve();
       opts.onHalt(() => {
         emit = error = complete = fp.noop;
       });
       source(
         (val) => {
           if (!val.then) val = Promise.resolve(val);
-          pending = val;
+          latestPromise = val;
           val.then((item) => {
-            if (pending === val) {
+            if (latestPromise === val) {
               emit(item);
             }
           }, (err) => {
-            if (pending === val) {
+            if (latestPromise === val) {
               error(err);
             }
           });
         },
 
         (err) => {
-          pending = pending.then(() => { error(err); });
+          latestPromise = latestPromise.then(() => { error(err); });
         },
 
         () => {
-          pending.then(complete);
+          latestPromise.then(complete);
         },
         opts
       );
