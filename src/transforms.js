@@ -238,11 +238,7 @@ function resolve() {
             }
           );
         },
-
-        (err) => {
-          pending = pending.then(() => { error(err); });
-        },
-
+        error,
         () => {
           pending.then(complete);
         },
@@ -273,11 +269,7 @@ function resolveLatest() {
             }
           });
         },
-
-        (err) => {
-          latestPromise = latestPromise.then(() => { error(err); });
-        },
-
+        error,
         () => {
           latestPromise.then(complete);
         },
