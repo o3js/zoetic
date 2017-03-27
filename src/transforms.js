@@ -4,6 +4,8 @@ const util = require('./util');
 const fp = require('lodash/fp');
 const Promise = require('bluebird');
 
+let transforms;
+
 function map(mapper) {
   const fn = fp.isFunction(mapper) ? mapper : fp.get(mapper);
   return (source) => (emit, error, complete, opts) => {
@@ -95,6 +97,46 @@ function take(count) {
   };
 }
 
+function skip(count) {
+  return (source) => {
+    return (emit, error, complete, opts) => {
+      let skipped = 0;
+      source(
+        (val) => {
+          if (skipped < count) {
+            skipped++;
+            return;
+          }
+          emit(val);
+        },
+        error,
+        complete,
+        opts);
+    };
+  };
+}
+
+function takeUntil(trigger) {
+  return (source) => {
+    return (emit, error, complete, opts) => {
+      const halter = util.halter(opts);
+      transforms.take(1, trigger).subscribe(
+        () => {
+          if (!halter.isHalted()) {
+            halter.halt();
+          }
+          complete();
+        }, fp.noop, fp.noop, { onHalt: halter.onHalt });
+
+      source(
+        emit,
+        error,
+        complete,
+        { onHalt: halter.onHalt });
+    };
+  };
+}
+
 function latest(count) {
   return (source) => {
     return (emit, error, complete, opts) => {
@@ -115,7 +157,9 @@ function latest(count) {
 function startWith(value) {
   return (source) => {
     return (emit, error, complete, opts) => {
-      emit(value);
+      let halted = false;
+      opts.onHalt(() => { halted = true; });
+      if (!halted) emit(value);
       source(emit, error, complete, opts);
     };
   };
@@ -295,10 +339,11 @@ function makeTransform(xf) {
   return transformer;
 }
 
-module.exports = fp.mapValues(makeTransform, {
+transforms = fp.mapValues(makeTransform, {
   map,
   filter,
   take,
+  takeUntil,
   latest,
   resolve,
   resolveLatest,
@@ -311,4 +356,7 @@ module.exports = fp.mapValues(makeTransform, {
   reduce,
   cat,
   mapcat,
+  skip,
 });
+
+module.exports = transforms;

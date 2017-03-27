@@ -30,7 +30,9 @@ class Sink {
         if (this.hasError) return;
         this.current = item;
         this.hasEmitted = true;
-        fp.each((listener) => listener && listener.emit(item), this.listeners);
+        fp.each((listener) => {
+          if (listener && (!listener.halted)) listener.emit(item);
+        }, this.listeners);
       },
       (err) => {
         if (this.hasError) return;
@@ -44,7 +46,10 @@ class Sink {
       () => {
         if (this.hasError) return;
         this.completed = true;
-        fp.each((listener) => listener && listener.complete(), this.listeners);
+        fp.each((listener) => {
+          this._halt(listener);
+          if (listener) listener.complete();
+        }, this.listeners);
       },
       { onHalt: fp.noop });
   }
@@ -69,13 +74,12 @@ class Sink {
       return;
     }
 
-    let halted = false;
-    const listener = { emit, error, complete };
+    const listener = { emit, error, complete, halted: false };
     events.onHalt(() => {
-      halted = true;
+      listener.halted = true;
       this._halt(listener);
     });
-    if (!halted) {
+    if (!listener.halted) {
       this.listeners.push(listener);
       if (this.listeners.length > 1) {
         if (this.hasEmitted) emit(this.current);

@@ -46,6 +46,9 @@ function halter(chained) {
   let listeners = [];
   let halted = false;
   function onHalt(fn) {
+    if (halted) {
+      fn(); return;
+    }
     listeners.push(fn);
   }
 
